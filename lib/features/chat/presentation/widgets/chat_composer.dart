@@ -28,53 +28,71 @@ class ChatComposer extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: TextField(
-                controller: controller,
-                maxLines: 4,
-                minLines: 1,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => onSend(),
-                style: Theme.of(context).textTheme.bodyLarge,
-                decoration: InputDecoration(
-                  hintText: '跟他说点什么...',
-                  hintStyle: const TextStyle(color: AppColors.inkFaint),
-                  filled: true,
-                  fillColor: AppColors.surfaceRaised,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppRadius.pill(context),
+              child: Container(
+                height: context.r(44),
+                padding: EdgeInsets.symmetric(horizontal: context.r(14)),
+                decoration: BoxDecoration(
+                  color: const Color(0xB8140F0D),
+                  borderRadius: BorderRadius.circular(context.r(22)),
+                  border: Border.all(
+                    color: const Color(0x24FFFFFF),
+                    width: 0.5,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.search_rounded,
+                      size: context.r(16),
+                      color: AppColors.inkFaint,
                     ),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppRadius.pill(context),
+                    SizedBox(width: context.r(9)),
+                    Expanded(
+                      child: TextField(
+                        controller: controller,
+                        maxLines: 1,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => onSend(),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        decoration: const InputDecoration(
+                          hintText: '跟他说点什么...',
+                          hintStyle: TextStyle(color: AppColors.inkFaint),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
                     ),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md(context),
-                    vertical: AppSpacing.sm(context),
-                  ),
+                    SizedBox(width: context.r(9)),
+                    Icon(
+                      Icons.camera_alt_outlined,
+                      size: context.r(18),
+                      color: AppColors.inkFaint,
+                    ),
+                  ],
                 ),
               ),
             ),
             SizedBox(width: AppSpacing.sm(context)),
             GestureDetector(
               onTap: onSend,
-              child: DecoratedBox(
+              child: Container(
+                width: context.r(44),
+                height: context.r(44),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.tint,
-                ),
-                child: SizedBox(
-                  width: context.r(42),
-                  height: context.r(42),
-                  child: Icon(
-                    Icons.arrow_upward_rounded,
-                    size: context.r(20),
-                    color: AppColors.ground,
+                  color: const Color(0xB8140F0D),
+                  border: Border.all(
+                    color: const Color(0x24FFFFFF),
+                    width: 0.5,
                   ),
+                ),
+                child: Icon(
+                  Icons.send_rounded,
+                  size: context.r(18),
+                  color: AppColors.ink,
                 ),
               ),
             ),
