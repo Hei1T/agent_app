@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -194,6 +195,7 @@ class _AppSheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final panelWidth = math.min(620.0, context.screenWidth);
     final radius = BorderRadius.vertical(top: Radius.circular(context.r(22)));
     Widget panel(Widget body) {
       return ClipRRect(
@@ -225,7 +227,7 @@ class _AppSheetBody extends StatelessWidget {
       return Align(
         alignment: Alignment.bottomCenter,
         child: SizedBox(
-          width: context.r(620),
+          width: panelWidth,
           height: context.screenHeight * 0.92,
           child: panel(
             Column(
@@ -233,6 +235,7 @@ class _AppSheetBody extends StatelessWidget {
                 SizedBox(height: context.r(16)),
                 grabber,
                 SizedBox(
+                  width: double.infinity,
                   height: context.r(34),
                   child: Stack(
                     alignment: Alignment.center,
@@ -282,7 +285,7 @@ class _AppSheetBody extends StatelessWidget {
       alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: context.r(620),
+          maxWidth: panelWidth,
           maxHeight: context.screenHeight * heightFactor,
         ),
         child: panel(
@@ -293,6 +296,7 @@ class _AppSheetBody extends StatelessWidget {
                 SizedBox(height: context.r(16)),
                 grabber,
                 SizedBox(
+                  width: double.infinity,
                   height: context.r(34),
                   child: Center(
                     child: Text(

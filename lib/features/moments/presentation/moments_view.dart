@@ -81,39 +81,34 @@ class _MomentsViewState extends ConsumerState<MomentsView> {
   }
 
   void _open(Moment moment) {
-    ref.read(momentOverlayProvider.notifier).state = moment;
-    showPopup(
+    showAppSheet(
       context,
-      Builder(
-        builder: (popContext) => MomentDetailSheet(
-          moment: moment,
-          liked: ref.read(likedMomentsProvider).contains(moment.id),
-          comments: ref.read(momentCommentsProvider)[moment.id],
-          onClose: () => Navigator.of(popContext).pop(),
-          onLike: () {
-            ref.read(likedMomentsProvider.notifier).update((liked) {
-              final next = {...liked};
-              if (!next.remove(moment.id)) next.add(moment.id);
-              return next;
-            });
-          },
-          onAddComment: (text) {
-            ref.read(momentCommentsProvider.notifier).update((value) {
-              final next = {...value};
-              next[moment.id] = [
-                ...?value[moment.id],
-                MomentComment(author: '你', text: text, time: '刚刚'),
-              ];
-              return next;
-            });
-          },
-        ),
+      title: '动态',
+      full: true,
+      child: MomentDetailSheet(
+        moment: moment,
+        liked: ref.read(likedMomentsProvider).contains(moment.id),
+        comments: ref.read(momentCommentsProvider)[moment.id],
+        onLike: () {
+          ref.read(likedMomentsProvider.notifier).update((liked) {
+            final next = {...liked};
+            if (!next.remove(moment.id)) next.add(moment.id);
+            return next;
+          });
+        },
+        onAddComment: (text) {
+          ref.read(momentCommentsProvider.notifier).update((value) {
+            final next = {...value};
+            next[moment.id] = [
+              ...?value[moment.id],
+              MomentComment(author: '你', text: text, time: '刚刚'),
+            ];
+            return next;
+          });
+        },
       ),
-    ).whenComplete(() {
-      if (mounted) ref.read(momentOverlayProvider.notifier).state = null;
-    });
+    );
   }
-
   void _showCamera(BuildContext context) {
     showPhotoPicker(context, withNote: true);
   }

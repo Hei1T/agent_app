@@ -11,7 +11,6 @@ class MomentDetailSheet extends StatefulWidget {
     super.key,
     required this.moment,
     required this.liked,
-    this.onClose,
     this.onLike,
     this.comments,
     this.onAddComment,
@@ -19,7 +18,6 @@ class MomentDetailSheet extends StatefulWidget {
 
   final Moment moment;
   final bool liked;
-  final VoidCallback? onClose;
   final VoidCallback? onLike;
   final List<MomentComment>? comments;
   final ValueChanged<String>? onAddComment;
@@ -34,7 +32,6 @@ class _MomentDetailSheetState extends State<MomentDetailSheet> {
   late final List<MomentComment> _comments = [
     ...(widget.comments ?? widget.moment.comments),
   ];
-  bool _closing = false;
 
   @override
   void dispose() {
@@ -44,145 +41,70 @@ class _MomentDetailSheetState extends State<MomentDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return NotificationListener<DraggableScrollableNotification>(
-      onNotification: (notification) {
-        if (!_closing &&
-            notification.extent <= notification.minExtent + 0.006) {
-          _closing = true;
-          widget.onClose?.call();
-        }
-        return false;
-      },
-      child: DraggableScrollableSheet(
-        expand: false,
-      initialChildSize: 0.78,
-      maxChildSize: 0.94,
-      minChildSize: 0.45,
-      builder: (context, controller) {
-        return DecoratedBox(
-          decoration: const BoxDecoration(
-            color: AppColors.surfaceRaised,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
+    return Column(
+      children: [
+        Expanded(
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.lg(context),
+              AppSpacing.md(context),
+              AppSpacing.lg(context),
+              AppSpacing.md(context),
+            ),
             children: [
-              Expanded(
-                child: ListView(
-                  controller: controller,
-                  padding: EdgeInsets.all(AppSpacing.lg(context)),
+              Text(widget.moment.author, style: AppTextStyles.title(context)),
+              Text('${widget.moment.time} · ${widget.moment.place}', style: AppTextStyles.caption(context)),
+              SizedBox(height: AppSpacing.md(context)),
+              Text(widget.moment.text, style: AppTextStyles.body(context)),
+              SizedBox(height: AppSpacing.md(context)),
+              for (final photo in widget.moment.photos)
+                Padding(
+                  padding: EdgeInsets.only(bottom: AppSpacing.sm(context)),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.md(context)),
+                    child: Image.asset(photo, fit: BoxFit.cover),
+                  ),
+                ),
+              SizedBox(height: AppSpacing.sm(context)),
+              GestureDetector(
+                onTap: () {
+                  setState(() => _liked = !_liked);
+                  widget.onLike?.call();
+                },
+                child: Row(
                   children: [
-                    Center(child: _Grabber()),
-                    SizedBox(height: AppSpacing.sm(context)),
-                    Row(
-                      children: [
-                        Text('动态', style: AppTextStyles.micro(context)),
-                        const Spacer(),
-                        if (widget.onClose != null)
-                          GestureDetector(
-                            onTap: widget.onClose,
-                            child: Container(
-                              width: context.r(28),
-                              height: context.r(28),
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0x14FFFFFF),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.close_rounded,
-                                  size: context.r(16),
-                                  color: AppColors.inkMuted,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                    Icon(
+                      _liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      size: context.r(17),
+                      color: _liked ? AppColors.tint : AppColors.inkMuted,
                     ),
-                    SizedBox(height: AppSpacing.md(context)),
-                    Text(
-                      widget.moment.author,
-                      style: AppTextStyles.title(context),
-                    ),
-                    Text(
-                      '${widget.moment.time} · ${widget.moment.place}',
-                      style: AppTextStyles.caption(context),
-                    ),
-                    SizedBox(height: AppSpacing.md(context)),
-                    Text(
-                      widget.moment.text,
-                      style: AppTextStyles.body(context),
-                    ),
-                    SizedBox(height: AppSpacing.md(context)),
-                    for (final photo in widget.moment.photos)
-                      Padding(
-                        padding: EdgeInsets.only(
-                          bottom: AppSpacing.sm(context),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(
-                            AppRadius.md(context),
-                          ),
-                          child: Image.asset(photo, fit: BoxFit.cover),
-                        ),
-                      ),
-                    SizedBox(height: AppSpacing.sm(context)),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() => _liked = !_liked);
-                        widget.onLike?.call();
-                      },
-                      child: Row(
-                        children: [
-                          Icon(
-                            _liked
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            size: context.r(17),
-                            color: _liked ? AppColors.tint : AppColors.inkMuted,
-                          ),
-                          SizedBox(width: AppSpacing.xs(context)),
-                          Text(
-                            '${widget.moment.likes.length + (_liked ? 1 : 0)} 人觉得好',
-                            style: AppTextStyles.caption(context),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: AppSpacing.md(context)),
-                    for (final comment in _comments)
-                      Padding(
-                        padding: EdgeInsets.only(
-                          bottom: AppSpacing.sm(context),
-                        ),
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: '${comment.author}：',
-                                style: AppTextStyles.bodyStrong(context),
-                              ),
-                              TextSpan(
-                                text: comment.text,
-                                style: AppTextStyles.body(context),
-                              ),
-                            ],
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
+                    SizedBox(width: AppSpacing.xs(context)),
+                    Text('${widget.moment.likes.length + (_liked ? 1 : 0)} 人觉得好', style: AppTextStyles.caption(context)),
                   ],
                 ),
               ),
-              _CommentComposer(controller: _controller, onSend: _send),
+              SizedBox(height: AppSpacing.md(context)),
+              for (final comment in _comments)
+                Padding(
+                  padding: EdgeInsets.only(bottom: AppSpacing.sm(context)),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: '${comment.author}：', style: AppTextStyles.bodyStrong(context)),
+                        TextSpan(text: comment.text, style: AppTextStyles.body(context)),
+                      ],
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
             ],
           ),
-        );
-      },
-      ),
+        ),
+        _CommentComposer(controller: _controller, onSend: _send),
+      ],
     );
   }
-
   void _send() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
@@ -259,15 +181,3 @@ class _CommentComposer extends StatelessWidget {
   }
 }
 
-class _Grabber extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.borderStrong,
-        borderRadius: BorderRadius.circular(AppRadius.pill(context)),
-      ),
-      child: SizedBox(width: context.r(34), height: context.r(4)),
-    );
-  }
-}
