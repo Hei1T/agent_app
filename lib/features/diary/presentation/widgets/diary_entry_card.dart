@@ -177,14 +177,37 @@ class _Body extends StatelessWidget {
       children: [
         for (var i = 0; i < paragraphs.length; i++) ...[
           if (i > 0) SizedBox(height: context.r(10)),
-          Text(
-            paragraphs[i],
-            style: AppTextStyles.body(context).copyWith(
-              fontSize: context.sp(12.5),
-              height: 2,
-              color: const Color(0xD6F7F2EB),
+          if (i == 0 && paragraphs[i].isNotEmpty)
+            Text.rich(
+              TextSpan(
+                style: AppTextStyles.body(context).copyWith(
+                  fontSize: context.sp(12.5),
+                  height: 2,
+                  color: const Color(0xD6F7F2EB),
+                ),
+                children: [
+                  TextSpan(
+                    text: paragraphs[i].substring(0, 1),
+                    style: AppTextStyles.headline(context).copyWith(
+                      fontSize: context.sp(30),
+                      height: 0.95,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.tint,
+                    ),
+                  ),
+                  TextSpan(text: paragraphs[i].substring(1)),
+                ],
+              ),
+            )
+          else
+            Text(
+              paragraphs[i],
+              style: AppTextStyles.body(context).copyWith(
+                fontSize: context.sp(12.5),
+                height: 2,
+                color: const Color(0xD6F7F2EB),
+              ),
             ),
-          ),
         ],
       ],
     );
