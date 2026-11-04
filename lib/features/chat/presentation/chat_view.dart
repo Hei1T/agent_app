@@ -41,6 +41,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
   @override
   Widget build(BuildContext context) {
     final pendingPhoto = ref.watch(pendingChatPhotoProvider);
+    final pendingNote = ref.watch(pendingChatNoteProvider);
     return PhonePage(
       key: const Key('chat_view'),
       header: ScreenHeader(
@@ -108,17 +109,26 @@ class _ChatViewState extends ConsumerState<ChatView> {
                 ],
                 if (pendingPhoto != null) ...[
                   SizedBox(height: AppSpacing.sm(context)),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(context.r(16)),
-                      child: Image.file(
-                        File(pendingPhoto.path),
-                        width: context.r(180),
-                        height: context.r(180),
-                        fit: BoxFit.cover,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(context.r(16)),
+                        child: Image.file(
+                          File(pendingPhoto.path),
+                          width: context.r(180),
+                          height: context.r(180),
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                    ),
+                      if (pendingNote != null) ...[
+                        SizedBox(height: context.r(4)),
+                        Text(
+                          pendingNote,
+                          style: AppTextStyles.caption(context),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
                 SizedBox(height: AppSpacing.sm(context)),
@@ -198,6 +208,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
       );
       _controller.clear();
       ref.read(pendingChatPhotoProvider.notifier).state = null;
+      ref.read(pendingChatNoteProvider.notifier).state = null;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;

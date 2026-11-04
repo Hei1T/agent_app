@@ -12,6 +12,7 @@ import '../../core/theme/app_text_styles.dart';
 import 'app_sheet.dart';
 
 final pendingChatPhotoProvider = StateProvider<XFile?>((ref) => null);
+final pendingChatNoteProvider = StateProvider<String?>((ref) => null);
 
 /// 所有入口共用同一个 Sheet 宿主，不再为拍照单独做浮层。
 Future<void> showPhotoPicker(
@@ -57,6 +58,9 @@ class _PhotoPickerContentState extends State<PhotoPickerContent> {
     if (file == null) return;
     final container = ProviderScope.containerOf(context);
     container.read(pendingChatPhotoProvider.notifier).state = file;
+    final note = _note.text.trim();
+    container.read(pendingChatNoteProvider.notifier).state =
+        note.isEmpty ? null : note;
     Navigator.of(context).pop();
     context.go('/chat');
   }
