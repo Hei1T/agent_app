@@ -3,9 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_text_styles.dart';
+import 'app_dock_item.dart';
 import 'app_icon.dart';
 
 class DockItemData {
@@ -70,8 +69,10 @@ class Dock extends StatelessWidget {
               children: [
                 for (var i = 0; i < dockItems.length; i++) ...[
                   if (i > 0) SizedBox(width: context.r(2)),
-                  _DockItem(
-                    item: dockItems[i],
+                  AppDockItem(
+                    label: dockItems[i].label,
+                    icon: dockItems[i].icon,
+                    dot: dockItems[i].dot,
                     selected: i == index,
                     onTap: () => onSelect(i),
                   ),
@@ -79,77 +80,6 @@ class Dock extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DockItem extends StatelessWidget {
-  const _DockItem({
-    required this.item,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final DockItemData item;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: SizedBox(
-        width: context.r(46),
-        height: context.r(48),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            if (item.dot)
-              Positioned(
-                top: context.r(7),
-                right: context.r(7),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppColors.green,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF1B1411),
-                      width: context.r(2),
-                    ),
-                  ),
-                  child: SizedBox(width: context.r(7), height: context.r(7)),
-                ),
-              ),
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedScale(
-                  scale: selected ? 1.06 : 1,
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOutCubic,
-                  child: AppIcon(
-                    item.icon,
-                    size: context.r(18),
-                    color: selected ? AppColors.ink : AppColors.inkFaint,
-                  ),
-                ),
-                SizedBox(height: AppSpacing.xxs(context)),
-                Text(
-                  item.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.micro(context).copyWith(
-                    fontSize: context.sp(9.5),
-                    letterSpacing: 0.02,
-                    color: selected ? AppColors.ink : AppColors.inkFaint,
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );

@@ -3,8 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../core/responsive/responsive.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
+import 'app_dock_item.dart';
 import 'app_icon.dart';
 
 class SideDockItem {
@@ -57,8 +56,11 @@ class SideDock extends StatelessWidget {
               children: [
                 for (var i = 0; i < sideDockItems.length; i++) ...[
                   if (i > 0) SizedBox(height: context.r(2)),
-                  _DockItem(
-                    item: sideDockItems[i],
+                  AppDockItem(
+                    label: sideDockItems[i].label,
+                    icon: sideDockItems[i].icon,
+                    dot: sideDockItems[i].dot,
+                    height: 46,
                     selected: i == index,
                     onTap: () => onSelect(i),
                   ),
@@ -66,75 +68,6 @@ class SideDock extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DockItem extends StatelessWidget {
-  const _DockItem({
-    required this.item,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final SideDockItem item;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: SizedBox(
-        width: context.r(46),
-        height: context.r(46),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                AppIcon(
-                  item.icon,
-                  size: context.r(18),
-                  color: selected ? AppColors.ink : AppColors.inkFaint,
-                ),
-                if (item.dot)
-                  Positioned(
-                    right: context.r(-4),
-                    top: context.r(-3),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: AppColors.green,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFF1B1411),
-                          width: context.r(2),
-                        ),
-                      ),
-                      child: SizedBox(
-                        width: context.r(7),
-                        height: context.r(7),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            SizedBox(height: context.r(2)),
-            Text(
-              item.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.micro(context).copyWith(
-                fontSize: context.sp(9.5),
-                letterSpacing: 0.02,
-                color: selected ? AppColors.ink : AppColors.inkFaint,
-              ),
-            ),
-          ],
         ),
       ),
     );
