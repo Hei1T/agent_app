@@ -36,7 +36,14 @@ class BenbenApp extends ConsumerWidget {
                 type: MaterialType.transparency,
                 child: SafeArea(
                   bottom: false,
-                  child: ProactiveNotice(onOpen: () => router.go('/chat')),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 462),
+                      child: ProactiveNotice(
+                        onOpen: () => router.go('/chat'),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
