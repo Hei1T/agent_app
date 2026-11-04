@@ -115,7 +115,7 @@ class _MomentsViewState extends ConsumerState<MomentsView> {
   }
 
   void _showCamera(BuildContext context) {
-    showPhotoPicker(context);
+    showPhotoPicker(context, withNote: true);
   }
 }
 
