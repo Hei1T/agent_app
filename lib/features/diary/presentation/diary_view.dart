@@ -1,3 +1,4 @@
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 
 import '../../../core/responsive/responsive.dart';
@@ -71,7 +72,6 @@ class _DiaryViewState extends State<DiaryView> {
             if (!mounted) return;
             final target = _entryKeys[index].currentContext;
             if (target != null) {
-              // ignore: use_build_context_synchronously
               Scrollable.ensureVisible(
                 target,
                 duration: const Duration(milliseconds: 420),

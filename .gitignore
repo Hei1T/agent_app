@@ -48,3 +48,4 @@ app.*.map.json
 /assets/fonts/pingfang/PingFangSC-Light.otf
 /assets/fonts/pingfang/PingFangSC-Medium.otf
 /assets/fonts/pingfang/PingFangSC-Regular.ttf
+test/golden/failures/

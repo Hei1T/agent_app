@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/auth/auth_controller.dart';
 
 import '../../../core/responsive/responsive.dart';
 import '../../../core/theme/app_colors.dart';
@@ -15,7 +18,7 @@ import '../domain/entities/profile_data.dart';
 import 'widgets/profile_hero.dart';
 import 'widgets/profile_section.dart';
 
-class ProfileView extends StatelessWidget {
+class ProfileView extends ConsumerWidget {
   const ProfileView({super.key});
 
   void _showMore(BuildContext context) {
@@ -55,7 +58,10 @@ class ProfileView extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final life = ref.watch(lifeProvider).valueOrNull;
+    final people = life == null ? demoProfile.people : life.people.map((p) => Person(name: p.name, role: p.role, note: p.note.isEmpty ? p.place : p.note, photo: 'assets/media/book2.jpg')).toList();
+    final things = life == null ? demoProfile.things : life.items.map((item) => Thing(name: (item['kind'] as String?) ?? '物件', detail: (item['note'] as String?) ?? '在他身边')).toList();
     return PhonePage(
       key: const Key('profile_view'),
       header: ScreenHeader(
@@ -77,7 +83,7 @@ class ProfileView extends StatelessWidget {
             context.isPortrait ? context.r(112) : AppSpacing.lg(context),
           ),
           children: [
-            const ProfileHero(companionName: '笨笨', day: 5),
+            const ProfileHero(companionName: '笨笨', day: 1),
             SizedBox(height: AppSpacing.md(context)),
             const _QuoteCard(),
             SizedBox(height: AppSpacing.md(context)),
@@ -88,13 +94,13 @@ class ProfileView extends StatelessWidget {
             ProfileSection(
               title: '他记得的人',
               meta: '4 个街坊',
-              child: _PeopleList(people: demoProfile.people),
+              child: _PeopleList(people: people),
             ),
             SizedBox(height: AppSpacing.md(context)),
             ProfileSection(
               title: '他的家当',
               meta: '6 件',
-              child: _ThingsList(things: demoProfile.things),
+              child: _ThingsList(things: things),
             ),
             SizedBox(height: AppSpacing.md(context)),
             ProfileSection(

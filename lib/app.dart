@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
 import 'shared/widgets/app_sheet.dart';
 import 'shared/widgets/proactive_notice.dart';
-import 'core/theme/app_theme.dart';
 
 class BenbenApp extends ConsumerWidget {
   const BenbenApp({super.key});
@@ -29,9 +29,7 @@ class BenbenApp extends ConsumerWidget {
             child ?? const SizedBox.shrink(),
             Positioned.fill(child: AppSheetHost(key: AppSheetHost.hostKey)),
             Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
+              top: 0, left: 0, right: 0,
               child: Material(
                 type: MaterialType.transparency,
                 child: SafeArea(
@@ -39,9 +37,7 @@ class BenbenApp extends ConsumerWidget {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 462),
-                      child: ProactiveNotice(
-                        onOpen: () => router.go('/chat'),
-                      ),
+                      child: ProactiveNotice(onOpen: () => router.go('/chat')),
                     ),
                   ),
                 ),

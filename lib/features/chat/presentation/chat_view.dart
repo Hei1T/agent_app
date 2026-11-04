@@ -14,7 +14,8 @@ import '../../../shared/widgets/screen_header.dart';
 import '../../../shared/widgets/app_icon.dart';
 import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/photo_overlay.dart';
-import '../data/demo_chat.dart';
+import '../../../core/network/api_exception.dart';
+import '../../../core/auth/auth_controller.dart';
 import '../domain/entities/chat_message.dart';
 import 'widgets/chat_bubble.dart';
 import 'widgets/chat_composer.dart';
@@ -29,7 +30,9 @@ class ChatView extends ConsumerStatefulWidget {
 class _ChatViewState extends ConsumerState<ChatView> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
-  late final List<ChatMessage> _messages = [...demoChat];
+  final List<ChatMessage> _messages = [];
+  bool _sending = false;
+  String _streamingText = '';
 
   @override
   void dispose() {
@@ -106,6 +109,10 @@ class _ChatViewState extends ConsumerState<ChatView> {
                 for (var i = 0; i < _messages.length; i++) ...[
                   if (i > 0) SizedBox(height: AppSpacing.sm(context)),
                   ChatBubble(message: _messages[i]),
+                ],
+                if (_streamingText.isNotEmpty) ...[
+                  SizedBox(height: AppSpacing.sm(context)),
+                  ChatBubble(message: ChatMessage(id: 'streaming', text: _streamingText, fromCompanion: true)),
                 ],
                 if (pendingPhoto != null) ...[
                   SizedBox(height: AppSpacing.sm(context)),
@@ -195,28 +202,63 @@ class _ChatViewState extends ConsumerState<ChatView> {
   }
 
   void _send() {
+    _sendMessage();
+  }
+
+  Future<void> _sendMessage() async {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _sending) return;
     setState(() {
-      _messages.add(
-        ChatMessage(
-          id: 'local-${DateTime.now().millisecondsSinceEpoch}',
-          text: text,
-          fromCompanion: false,
-          read: true,
-        ),
-      );
+      _messages.add(ChatMessage(id: 'local-${DateTime.now().millisecondsSinceEpoch}', text: text, fromCompanion: false, read: true));
       _controller.clear();
-      ref.read(pendingChatPhotoProvider.notifier).state = null;
-      ref.read(pendingChatNoteProvider.notifier).state = null;
+      _sending = true;
+      _streamingText = '';
     });
+    ref.read(pendingChatPhotoProvider.notifier).state = null;
+    ref.read(pendingChatNoteProvider.notifier).state = null;
+    _scrollToEnd();
+    var completed = false;
+    try {
+      await for (final event in ref.read(apiProvider).streamChat(text)) {
+        if (!mounted) return;
+        if (event.event == 'delta') {
+          setState(() => _streamingText += event.data);
+          _scrollToEnd();
+        } else if (event.event == 'done') {
+          completed = true;
+          setState(() {
+            _messages.add(ChatMessage(id: 'assistant-${DateTime.now().microsecondsSinceEpoch}', text: event.data, fromCompanion: true, read: true));
+            _streamingText = '';
+            _sending = false;
+          });
+          _scrollToEnd();
+        } else if (event.event == 'error') {
+          throw ApiException(502, event.data);
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          if (_streamingText.isNotEmpty) {
+            _messages.add(ChatMessage(id: 'partial-${DateTime.now().microsecondsSinceEpoch}', text: _streamingText, fromCompanion: true));
+          }
+          _streamingText = '';
+          _sending = false;
+        });
+        final message = error is ApiException && error.code == 'INSUFFICIENT_CREDITS'
+            ? '积分不足，这一轮没有开始。'
+            : '他那边暂时没接上：$error';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted && !completed) setState(() => _sending = false);
+    }
+  }
+
+  void _scrollToEnd() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
-      _scroll.animateTo(
-        _scroll.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 240),
-        curve: Curves.easeOut,
-      );
+      _scroll.animateTo(_scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 240), curve: Curves.easeOut);
     });
   }
 }

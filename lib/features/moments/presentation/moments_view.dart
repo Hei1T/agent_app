@@ -13,7 +13,8 @@ import '../../../shared/widgets/phone_page.dart';
 import '../../../shared/widgets/screen_header.dart';
 import '../../../shared/widgets/app_icon_button.dart';
 import '../../../shared/widgets/app_icon.dart';
-import '../data/demo_moments.dart';
+import '../../../core/api/api_client.dart';
+import '../../../core/auth/auth_controller.dart';
 import 'moment_overlay_provider.dart';
 import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/photo_overlay.dart';
@@ -46,31 +47,47 @@ class _MomentsViewState extends ConsumerState<MomentsView> {
           ),
         ],
       ),
-      child: FadeMask(
-        child: ListView.separated(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.pageH(context),
-            context.r(62),
-            AppSpacing.pageH(context),
-            context.isPortrait ? context.r(112) : AppSpacing.lg(context),
-          ),
-          itemCount: demoMoments.length,
-          separatorBuilder: (context, index) =>
-              SizedBox(height: AppSpacing.md(context)),
-          itemBuilder: (context, index) {
-            final item = demoMoments[index];
-            return MomentCard(
-              moment: item,
-              liked: liked.contains(item.id),
-              comments: comments[item.id] ?? item.comments,
-              onLike: () => _toggle(item.id),
-              onTap: () => _open(item),
-            );
-          },
+      child: ref.watch(feedProvider).when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Padding(padding: EdgeInsets.all(AppSpacing.lg(context)), child: Text('朋友圈暂时连不上：$error', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall))),
+        data: (remote) => FadeMask(
+          child: remote.isEmpty
+              ? Center(child: Text('还没有动态', style: Theme.of(context).textTheme.bodySmall))
+              : ListView.separated(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.pageH(context),
+                    context.r(62),
+                    AppSpacing.pageH(context),
+                    context.isPortrait ? context.r(112) : AppSpacing.lg(context),
+                  ),
+                  itemCount: remote.length,
+                  separatorBuilder: (context, index) => SizedBox(height: AppSpacing.md(context)),
+                  itemBuilder: (context, index) {
+                    final item = _toMoment(remote[index]);
+                    return MomentCard(
+                      moment: item,
+                      liked: liked.contains(item.id),
+                      comments: comments[item.id] ?? item.comments,
+                      onLike: () => _toggle(item.id),
+                      onTap: () => _open(item),
+                    );
+                  },
+                ),
         ),
       ),
     );
   }
+
+  Moment _toMoment(RemoteMoment item) => Moment(
+    id: item.id,
+    author: item.author,
+    time: item.time,
+    place: item.place,
+    text: item.text,
+    photos: const [],
+    likes: const [],
+    comments: const [],
+  );
 
   void _toggle(String id) {
     ref.read(likedMomentsProvider.notifier).update((liked) {

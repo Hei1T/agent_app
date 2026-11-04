@@ -1,7 +1,7 @@
-import 'package:benben_app/app.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'test_support.dart';
 
 void main() {
   testWidgets('phone shell boots', (tester) async {
@@ -9,9 +9,7 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-
-    await tester.pumpWidget(const ProviderScope(child: BenbenApp()));
-    await tester.pump();
+    await pumpBenben(tester);
     expect(find.byKey(const Key('today_view')), findsOneWidget);
   });
 
@@ -20,9 +18,7 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-
-    await tester.pumpWidget(const ProviderScope(child: BenbenApp()));
-    await tester.pump();
+    await pumpBenben(tester);
     expect(find.byKey(const Key('cinema_tablet')), findsOneWidget);
   });
 }
