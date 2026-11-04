@@ -28,7 +28,7 @@ class MomentCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: GlassPanel(
-        padding: EdgeInsets.all(AppSpacing.md(context)),
+        padding: EdgeInsets.all(context.r(12)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -69,7 +69,7 @@ class MomentCard extends StatelessWidget {
                   TextSpan(
                     children: [
                       TextSpan(
-                        text: '${moment.comments.first.author}：',
+                        text: '${(comments ?? moment.comments).first.author}：',
                         style: const TextStyle(
                           color: Color(0xB3F7F2EB),
                           fontWeight: FontWeight.w500,
@@ -110,10 +110,11 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        ClipOval(
+        ClipRRect(
+          borderRadius: BorderRadius.circular(context.r(11)),
           child: SizedBox(
-            width: context.r(30),
-            height: context.r(30),
+            width: context.r(34),
+            height: context.r(34),
             child: Image.asset('assets/media/book1.jpg', fit: BoxFit.cover),
           ),
         ),
