@@ -113,7 +113,7 @@ class _PhotoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: context.r(90),
+      height: context.r(64),
       child: Row(
         children: [
           for (var i = 0; i < 4; i++) ...[
@@ -278,59 +278,77 @@ class _ProfileTiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    const tiles = [
+      _TileData('去过的地方', '3', '旧书店 · 旧货市场 · 河堤'),
+      _TileData('见过的人', '4', '林叔 · 张姨 · 老赵 · 阿海'),
+      _TileData('记着的事', '2', '洗衣机 · 后院的旧书'),
+      _TileData('这些天', '5', '从 10月28日 到今天'),
+    ];
+    return Column(
       children: [
-        _Tile(label: '去过的地方', value: '3', detail: '旧书店 · 旧货市场 · 河堤'),
-        SizedBox(width: AppSpacing.xs(context)),
-        _Tile(label: '见过的人', value: '4', detail: '林叔 · 张姨 · 老赵 · 阿海'),
-        SizedBox(width: AppSpacing.xs(context)),
-        _Tile(label: '记着的事', value: '2', detail: '洗衣机 · 后院的旧书'),
-        SizedBox(width: AppSpacing.xs(context)),
-        _Tile(label: '这些天', value: '5', detail: '从 10月28日 到今天'),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _Tile(data: tiles[0])),
+            SizedBox(width: AppSpacing.xs(context)),
+            Expanded(child: _Tile(data: tiles[1])),
+          ],
+        ),
+        SizedBox(height: AppSpacing.xs(context)),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _Tile(data: tiles[2])),
+            SizedBox(width: AppSpacing.xs(context)),
+            Expanded(child: _Tile(data: tiles[3])),
+          ],
+        ),
       ],
     );
   }
 }
 
-class _Tile extends StatelessWidget {
-  const _Tile({required this.label, required this.value, required this.detail});
-
+class _TileData {
+  const _TileData(this.label, this.value, this.detail);
   final String label;
   final String value;
   final String detail;
+}
+
+class _Tile extends StatelessWidget {
+  const _Tile({required this.data});
+
+  final _TileData data;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.md(context)),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(AppSpacing.sm(context)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.micro(context),
-              ),
-              Text(value, style: AppTextStyles.title(context)),
-              Text(
-                detail,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.caption(
-                  context,
-                ).copyWith(fontSize: context.sp(7.5)),
-              ),
-            ],
-          ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md(context)),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.sm(context)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              data.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.micro(context),
+            ),
+            Text(data.value, style: AppTextStyles.title(context)),
+            Text(
+              data.detail,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.caption(
+                context,
+              ).copyWith(fontSize: context.sp(8.5)),
+            ),
+          ],
         ),
       ),
     );
