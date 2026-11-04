@@ -9,10 +9,15 @@ import '../../core/theme/app_text_styles.dart';
 import 'app_icon.dart';
 
 class DockItemData {
-  const DockItemData({required this.label, required this.icon});
+  const DockItemData({
+    required this.label,
+    required this.icon,
+    this.dot = false,
+  });
 
   final String label;
   final AppIconName icon;
+  final bool dot;
 }
 
 const dockItems = [
@@ -20,7 +25,7 @@ const dockItems = [
   DockItemData(label: '朋友圈', icon: AppIconName.moments),
   DockItemData(label: '日记', icon: AppIconName.diary),
   DockItemData(label: '他', icon: AppIconName.person),
-  DockItemData(label: '对话', icon: AppIconName.chat),
+  DockItemData(label: '对话', icon: AppIconName.chat, dot: true),
 ];
 
 /// 手机竖屏：底部悬浮 dock。
@@ -43,15 +48,15 @@ class Dock extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF1B1411), Color(0xFF1B1411)],
+              colors: [Color(0x521B1411), Color(0x300D0A09)],
             ),
             borderRadius: radius,
             border: Border.all(color: const Color(0x2BFFFFFF)),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x75000000),
-                blurRadius: 46,
-                offset: Offset(0, 22),
+                color: Color(0x5C000000),
+                blurRadius: 42,
+                offset: Offset(0, 20),
               ),
             ],
           ),
@@ -102,25 +107,21 @@ class _DockItem extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            if (selected)
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(context.r(12)),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0x21FFFFFF), Color(0x0FFFFFFF)],
-                  ),
-                  border: Border.all(color: Color(0x29FFFFFF)),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x3D000000),
-                      blurRadius: 14,
-                      offset: Offset(0, 4),
+            if (item.dot)
+              Positioned(
+                top: context.r(7),
+                right: context.r(7),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppColors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF1B1411),
+                      width: context.r(2),
                     ),
-                  ],
+                  ),
+                  child: SizedBox(width: context.r(7), height: context.r(7)),
                 ),
-                child: const SizedBox.expand(),
               ),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
