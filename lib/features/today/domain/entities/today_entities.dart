@@ -4,7 +4,7 @@ class TimelineEntry {
     required this.time,
     required this.title,
     required this.detail,
-    required this.photo,
+    this.photo,
     this.feeling = '',
     this.unread = 0,
   });
@@ -13,7 +13,7 @@ class TimelineEntry {
   final String time;
   final String title;
   final String detail;
-  final String photo;
+  final String? photo;
   final String feeling;
   final int unread;
 }

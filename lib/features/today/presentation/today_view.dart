@@ -67,7 +67,7 @@ class TodayView extends ConsumerWidget {
         id: 'evt-$i', time: life.events[i].time,
         title: '笨笨 · ${life.events[i].feeling.isEmpty ? '生活' : life.events[i].feeling}',
         detail: life.events[i].detail,
-        photo: 'assets/media/book1.jpg',
+        photo: null,
         feeling: life.events[i].feeling,
       ),
   ];
@@ -124,7 +124,7 @@ class _NowSheet extends StatelessWidget {
         SizedBox(height: AppSpacing.sm(context)),
         Text('精力 ${(life.energy * 100).round()}% · 饱腹 ${(life.satiety * 100).round()}% · 心情 ${(life.mood * 100).round()}%', style: Theme.of(context).textTheme.bodyMedium),
         SizedBox(height: AppSpacing.sm(context)),
-        Text(life.condition.isEmpty ? '这是他自己的第 1 天。' : life.condition, style: Theme.of(context).textTheme.bodySmall),
+        Text(life.condition.isEmpty ? '没有特别说明。' : life.condition, style: Theme.of(context).textTheme.bodySmall),
       ]),
     ),
   );

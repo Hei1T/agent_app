@@ -52,19 +52,21 @@ class _TimelineRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(context.r(13)),
-                child: SizedBox(
-                  width: context.r(40),
-                  height: context.r(40),
-                  child: Image.asset(
-                    entry.photo,
-                    fit: BoxFit.cover,
-                    cacheWidth: 120,
+              if (entry.photo != null && entry.photo!.isNotEmpty) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(context.r(13)),
+                  child: SizedBox(
+                    width: context.r(40),
+                    height: context.r(40),
+                    child: Image.asset(
+                      entry.photo!,
+                      fit: BoxFit.cover,
+                      cacheWidth: 120,
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: context.r(10)),
+                SizedBox(width: context.r(10)),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
