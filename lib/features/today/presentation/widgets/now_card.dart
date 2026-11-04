@@ -19,7 +19,7 @@ class NowCard extends StatelessWidget {
       onTap: onTap,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.lg(context)),
+          borderRadius: BorderRadius.circular(context.r(18)),
           border: Border.all(color: AppColors.border),
           gradient: const RadialGradient(
             center: Alignment.topRight,
@@ -55,19 +55,32 @@ class NowCard extends StatelessWidget {
                 ),
                 SizedBox(height: AppSpacing.sm(context)),
                 _Stats(companion: companion),
-                SizedBox(height: AppSpacing.sm(context)),
-                Text(
-                  '“把晒了一下午的旧书一本本收回来，码回后院。”',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.body(context),
+                SizedBox(height: context.r(9)),
+                Container(
+                  padding: EdgeInsets.only(top: context.r(8)),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Color(0x0FFFFFFF), width: 0.5),
+                    ),
+                  ),
+                  child: Text(
+                    '“把晒了一下午的旧书一本本收回来，码回后院。”',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body(context).copyWith(
+                      fontSize: context.sp(9),
+                      height: 1.55,
+                      color: AppColors.inkMuted,
+                    ),
+                  ),
                 ),
-                SizedBox(height: AppSpacing.xs(context)),
+                SizedBox(height: context.r(5)),
                 Text(
                   '这一条生活，只在这里发生',
-                  style: AppTextStyles.micro(
-                    context,
-                  ).copyWith(letterSpacing: 0.05),
+                  style: AppTextStyles.micro(context).copyWith(
+                    fontSize: context.sp(7.5),
+                    letterSpacing: 0.06,
+                  ),
                 ),
               ],
             ),
