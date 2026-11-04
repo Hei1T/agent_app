@@ -56,9 +56,31 @@ class AppSheetHost extends StatefulWidget {
   State<AppSheetHost> createState() => AppSheetHostState();
 }
 
-class AppSheetHostState extends State<AppSheetHost> {
+class AppSheetHostState extends State<AppSheetHost>
+    with WidgetsBindingObserver {
   final _navigator = GlobalKey<NavigatorState>();
   bool _open = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Future<bool> didPopRoute() async {
+    if (_open) {
+      _navigator.currentState?.maybePop();
+      return true;
+    }
+    return super.didPopRoute();
+  }
 
   Future<void> showRaw(
     Widget child, {
