@@ -23,15 +23,19 @@ class ChatBubble extends StatelessWidget {
         if (fromCompanion) ...[
           ClipOval(
             child: SizedBox(
-              width: context.r(26),
-              height: context.r(26),
+              width: context.r(24),
+              height: context.r(24),
               child: Image.asset('assets/media/book1.jpg', fit: BoxFit.cover),
             ),
           ),
           SizedBox(width: AppSpacing.xs(context)),
         ],
         Flexible(
-          child: DecoratedBox(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.76,
+            ),
+            child: DecoratedBox(
             decoration: BoxDecoration(
               color: fromCompanion ? AppColors.surfaceRaised : AppColors.tint,
               borderRadius: BorderRadius.circular(AppRadius.md(context)),
@@ -41,35 +45,38 @@ class ChatBubble extends StatelessWidget {
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm(context),
-                vertical: AppSpacing.xs(context),
+                horizontal: context.r(11),
+                vertical: context.r(8),
               ),
-              child: Row(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: fromCompanion
+                    ? CrossAxisAlignment.start
+                    : CrossAxisAlignment.end,
                 children: [
-                  Flexible(
-                    child: Text(
-                      message.text,
-                      maxLines: 6,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.body(context).copyWith(
-                        color: fromCompanion ? AppColors.ink : AppColors.ground,
-                      ),
+                  Text(
+                    message.text,
+                    maxLines: 6,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body(context).copyWith(
+                      fontSize: context.sp(11.5),
+                      height: 1.5,
+                      color: fromCompanion ? AppColors.ink : AppColors.ground,
                     ),
                   ),
                   if (!fromCompanion && message.read) ...[
-                    SizedBox(width: context.r(5)),
+                    SizedBox(height: context.r(3)),
                     Text(
                       '已读',
                       style: AppTextStyles.micro(context).copyWith(
-                        fontSize: context.sp(6.5),
-                        color: AppColors.ground.withValues(alpha: 0.5),
+                        fontSize: context.sp(8.5),
+                        color: AppColors.ground.withValues(alpha: 0.45),
                       ),
                     ),
                   ],
                 ],
               ),
+            ),
             ),
           ),
         ),
