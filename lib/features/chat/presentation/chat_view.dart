@@ -18,6 +18,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/auth/auth_controller.dart';
 import '../domain/entities/chat_message.dart';
 import '../data/demo_chat.dart';
+import 'chat_outbox.dart';
 import 'widgets/chat_bubble.dart';
 import 'widgets/chat_composer.dart';
 
@@ -46,6 +47,12 @@ class _ChatViewState extends ConsumerState<ChatView> {
   Widget build(BuildContext context) {
     final pendingPhoto = ref.watch(pendingChatPhotoProvider);
     final pendingNote = ref.watch(pendingChatNoteProvider);
+    final portrait = context.isPortrait;
+    ref.listen<String?>(chatOutboxProvider, (previous, next) {
+      if (next == null) return;
+      ref.read(chatOutboxProvider.notifier).state = null;
+      _sendMessage(explicitText: next);
+    });
     String? lastOutgoingId;
     for (final message in _messages) {
       if (!message.fromCompanion) lastOutgoingId = message.id;
@@ -88,7 +95,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
                 AppSpacing.pageH(context),
                 context.r(62),
                 AppSpacing.pageH(context),
-                AppSpacing.sm(context),
+                portrait ? context.r(104) : AppSpacing.sm(context),
               ),
               children: [
                 _DayDivider(label: '今天 · 15:02'),
@@ -173,7 +180,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
               ],
             ),
           ),
-          ChatComposer(controller: _controller, onSend: _send),
+          if (!portrait) ChatComposer(controller: _controller, onSend: _send),
         ],
       ),
     );
@@ -217,8 +224,8 @@ class _ChatViewState extends ConsumerState<ChatView> {
     _sendMessage();
   }
 
-  Future<void> _sendMessage() async {
-    final text = _controller.text.trim();
+  Future<void> _sendMessage({String? explicitText}) async {
+    final text = (explicitText ?? _controller.text).trim();
     if (text.isEmpty || _sending) return;
     setState(() {
       _messages.add(

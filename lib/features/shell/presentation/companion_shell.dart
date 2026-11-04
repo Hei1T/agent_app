@@ -4,9 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/responsive/responsive.dart';
 import '../../../shared/widgets/app_sheet.dart';
-import '../../../shared/widgets/dock.dart';
+import '../../../shared/widgets/morph_dock.dart';
 
 import '../../../shared/widgets/side_dock.dart';
+import '../../chat/presentation/chat_outbox.dart';
 import '../../tablet/presentation/cinema_tablet_view.dart';
 import 'widgets/phone_right_panel.dart';
 
@@ -97,22 +98,24 @@ class CompanionShell extends StatelessWidget {
                 ),
               ),
             ),
-          if (!chat && portrait)
+          if (portrait)
             Positioned(
               left: 0,
               right: 0,
-              bottom: bottomInset + context.r(12),
-              child: Center(
-                child: Consumer(
-                  builder: (context, ref, child) {
-                    final sheetOpen = ref.watch(appSheetOpenProvider);
-                    if (sheetOpen) return const SizedBox.shrink();
-                    return Dock(
-                      index: _index,
-                      onSelect: (i) => _go(context, i),
-                    );
-                  },
-                ),
+              bottom: bottomInset + context.r(8),
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final sheetOpen = ref.watch(appSheetOpenProvider);
+                  if (sheetOpen) return const SizedBox.shrink();
+                  return MorphDock(
+                    index: _index,
+                    chatActive: chat,
+                    onSelect: (i) => _go(context, i),
+                    onChat: () => context.go('/chat'),
+                    onSend: (text) =>
+                        ref.read(chatOutboxProvider.notifier).state = text,
+                  );
+                },
               ),
             ),
         ],
