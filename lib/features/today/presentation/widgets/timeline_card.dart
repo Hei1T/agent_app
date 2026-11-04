@@ -44,14 +44,14 @@ class _TimelineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: context.isPortrait ? context.r(10) : AppSpacing.md(context),
-        vertical: AppSpacing.sm(context),
+        horizontal: context.isPortrait ? context.r(12) : AppSpacing.md(context),
+        vertical: context.r(9),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.sm(context)),
+            borderRadius: BorderRadius.circular(context.r(13)),
             child: SizedBox(
               width: context.r(40),
               height: context.r(40),
@@ -62,7 +62,7 @@ class _TimelineRow extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(width: AppSpacing.sm(context)),
+          SizedBox(width: context.r(10)),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
