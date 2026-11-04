@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/moment.dart';
+import 'moment_photo.dart';
 
 class MomentDetailSheet extends StatefulWidget {
   const MomentDetailSheet({
@@ -53,7 +54,10 @@ class _MomentDetailSheetState extends State<MomentDetailSheet> {
             ),
             children: [
               Text(widget.moment.author, style: AppTextStyles.title(context)),
-              Text('${widget.moment.time} · ${widget.moment.place}', style: AppTextStyles.caption(context)),
+              Text(
+                '${widget.moment.time} · ${widget.moment.place}',
+                style: AppTextStyles.caption(context),
+              ),
               SizedBox(height: AppSpacing.md(context)),
               Text(widget.moment.text, style: AppTextStyles.body(context)),
               SizedBox(height: AppSpacing.md(context)),
@@ -62,7 +66,10 @@ class _MomentDetailSheetState extends State<MomentDetailSheet> {
                   padding: EdgeInsets.only(bottom: AppSpacing.sm(context)),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(AppRadius.md(context)),
-                    child: Image.asset(photo, fit: BoxFit.cover),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: MomentPhoto(source: photo, cacheWidth: 1080),
+                    ),
                   ),
                 ),
               SizedBox(height: AppSpacing.sm(context)),
@@ -74,12 +81,17 @@ class _MomentDetailSheetState extends State<MomentDetailSheet> {
                 child: Row(
                   children: [
                     Icon(
-                      _liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      _liked
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
                       size: context.r(17),
                       color: _liked ? AppColors.tint : AppColors.inkMuted,
                     ),
                     SizedBox(width: AppSpacing.xs(context)),
-                    Text('${widget.moment.likes.length + (_liked ? 1 : 0)} 人觉得好', style: AppTextStyles.caption(context)),
+                    Text(
+                      '${widget.moment.likes.length + (_liked ? 1 : 0)} 人觉得好',
+                      style: AppTextStyles.caption(context),
+                    ),
                   ],
                 ),
               ),
@@ -90,8 +102,14 @@ class _MomentDetailSheetState extends State<MomentDetailSheet> {
                   child: Text.rich(
                     TextSpan(
                       children: [
-                        TextSpan(text: '${comment.author}：', style: AppTextStyles.bodyStrong(context)),
-                        TextSpan(text: comment.text, style: AppTextStyles.body(context)),
+                        TextSpan(
+                          text: '${comment.author}：',
+                          style: AppTextStyles.bodyStrong(context),
+                        ),
+                        TextSpan(
+                          text: comment.text,
+                          style: AppTextStyles.body(context),
+                        ),
                       ],
                     ),
                     maxLines: 3,
@@ -105,6 +123,7 @@ class _MomentDetailSheetState extends State<MomentDetailSheet> {
       ],
     );
   }
+
   void _send() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
@@ -180,4 +199,3 @@ class _CommentComposer extends StatelessWidget {
     );
   }
 }
-

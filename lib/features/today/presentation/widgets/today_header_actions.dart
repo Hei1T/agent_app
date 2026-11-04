@@ -314,7 +314,9 @@ class _SearchRow extends StatelessWidget {
           child: SizedBox(
             width: context.r(38),
             height: context.r(38),
-            child: entry.photo == null ? const SizedBox.shrink() : Image.asset(entry.photo!, fit: BoxFit.cover),
+            child: entry.photo == null
+                ? const SizedBox.shrink()
+                : Image.asset(entry.photo!, fit: BoxFit.cover),
           ),
         ),
         SizedBox(width: AppSpacing.sm(context)),
@@ -443,10 +445,10 @@ class _SettingRow extends StatelessWidget {
               ),
               child: SizedBox(width: context.r(34), height: context.r(20)),
             ),
-            ],
-          ),
+          ],
         ),
-      );
+      ),
+    );
   }
 }
 

@@ -5,15 +5,15 @@ abstract final class AppColors {
   static const ground = Color(0xFF0B0908);
   static const surface = Color(0xFF15100E);
   static const surfaceRaised = Color(0xFF211814);
-  static const surfaceGlass = Color(0xCC1B1411);
+  static const surfaceGlass = Color(0xE615100E);
 
   static const ink = Color(0xFFF6F1E9);
   static const inkSecondary = Color(0xB3F6F1E9);
   static const inkMuted = Color(0x8AF6F1E9);
   static const inkFaint = Color(0x5CF6F1E9);
 
-  static const tint = Color(0xFFFFB183);
-  static const tintStrong = Color(0xFFFF8F56);
+  static const tint = Color(0xFFFF9E6B);
+  static const tintStrong = Color(0xFFE8793F);
   static const tintSoft = Color(0x1AFFB183);
   static const tintBorder = Color(0x4DFFB183);
 

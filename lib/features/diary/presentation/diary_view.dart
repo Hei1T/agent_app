@@ -41,6 +41,7 @@ class _DiaryViewState extends State<DiaryView> {
       ),
       child: FadeMask(
         child: ListView.separated(
+          key: const Key('diary_feed'),
           padding: EdgeInsets.fromLTRB(
             AppSpacing.pageH(context),
             context.r(62),
@@ -52,7 +53,10 @@ class _DiaryViewState extends State<DiaryView> {
               SizedBox(height: AppSpacing.md(context)),
           itemBuilder: (context, index) => KeyedSubtree(
             key: _entryKeys[index],
-            child: DiaryEntryCard(entry: demoDiary[index]),
+            child: DiaryEntryCard(
+              entry: demoDiary[index],
+              showDivider: index != demoDiary.length - 1,
+            ),
           ),
         ),
       ),

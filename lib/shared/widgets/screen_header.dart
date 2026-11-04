@@ -26,12 +26,12 @@ class ScreenHeader extends StatelessWidget {
     return GlassPanel(
       key: const Key('screen_header'),
       padding: EdgeInsets.symmetric(
-        horizontal: context.isPortrait ? context.r(10) : AppSpacing.md(context),
+        horizontal: context.isPortrait ? context.r(12) : AppSpacing.md(context),
         vertical: 0,
       ),
       borderRadius: BorderRadius.circular(AppRadius.lg(context)),
       child: SizedBox(
-        height: context.r(compact ? 38 : 46),
+        height: context.r(compact ? 40 : 46),
         child: Row(
           children: [
             if (leading != null) ...[
@@ -49,7 +49,7 @@ class ScreenHeader extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.bodyStrong(
                       context,
-                    ).copyWith(fontSize: context.sp(14)),
+                    ).copyWith(fontSize: context.sp(15)),
                   ),
                   if (subtitle != null)
                     Text(
@@ -58,7 +58,7 @@ class ScreenHeader extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.caption(
                         context,
-                      ).copyWith(fontSize: context.sp(8.5)),
+                      ).copyWith(fontSize: context.sp(9.5)),
                     ),
                 ],
               ),

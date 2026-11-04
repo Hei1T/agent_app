@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/responsive/responsive.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/models/companion.dart';
 
+/// 「他此刻」：单页平面化，没有卡片外壳，只在底部留一条 hairline。
+///
+/// 对齐 React 稿 `.today-single .now-card`：透明底、0 圆角、透明 stats，
+/// stats 三列一行，用 0.5px 左分隔线区分。
 class NowCard extends StatelessWidget {
   const NowCard({super.key, required this.companion, required this.onTap});
 
@@ -16,74 +19,23 @@ class NowCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       key: const Key('today_now_card'),
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(context.r(18)),
-          border: Border.all(color: AppColors.border),
-          gradient: const RadialGradient(
-            center: Alignment.topRight,
-            radius: 1.2,
-            colors: [Color(0x1FFFB183), Color(0x00000000)],
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: AppColors.border, width: 0.5),
           ),
         ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.lg(context)),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xC72B211B), Color(0xCC120D0B)],
-            ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(context.r(13)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _Avatar(initial: companion.name.substring(0, 1)),
-                    SizedBox(width: AppSpacing.sm(context)),
-                    Expanded(child: _TitleBlock(companion: companion)),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: context.r(16),
-                      color: AppColors.inkFaint,
-                    ),
-                  ],
-                ),
-                SizedBox(height: AppSpacing.sm(context)),
-                _Stats(companion: companion),
-                SizedBox(height: context.r(9)),
-                Container(
-                  padding: EdgeInsets.only(top: context.r(8)),
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      top: BorderSide(color: Color(0x0FFFFFFF), width: 0.5),
-                    ),
-                  ),
-                  child: Text(
-                    '“把晒了一下午的旧书一本本收回来，码回后院。”',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.body(context).copyWith(
-                      fontSize: context.sp(9),
-                      height: 1.55,
-                      color: AppColors.inkMuted,
-                    ),
-                  ),
-                ),
-                SizedBox(height: context.r(5)),
-                Text(
-                  '这一条生活，只在这里发生',
-                  style: AppTextStyles.micro(context).copyWith(
-                    fontSize: context.sp(7.5),
-                    letterSpacing: 0.06,
-                  ),
-                ),
-              ],
-            ),
+        child: Padding(
+          padding: EdgeInsets.only(bottom: context.r(14)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _TopRow(companion: companion),
+              _Stats(companion: companion),
+              const _Quote(),
+            ],
           ),
         ),
       ),
@@ -91,14 +43,40 @@ class NowCard extends StatelessWidget {
   }
 }
 
+class _TopRow extends StatelessWidget {
+  const _TopRow({required this.companion});
+
+  final Companion companion;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _Avatar(initial: _initial(companion.name), awake: companion.awake),
+        SizedBox(width: context.r(10)),
+        Expanded(child: _TitleBlock(companion: companion)),
+        Icon(
+          Icons.chevron_right_rounded,
+          size: context.r(15),
+          color: AppColors.inkFaint,
+        ),
+      ],
+    );
+  }
+
+  String _initial(String name) => name.isEmpty ? '笨' : name.substring(0, 1);
+}
+
 class _Avatar extends StatelessWidget {
-  const _Avatar({required this.initial});
+  const _Avatar({required this.initial, required this.awake});
 
   final String initial;
+  final bool awake;
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
+      key: const Key('now_avatar'),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.tintSoft,
@@ -112,25 +90,35 @@ class _Avatar extends StatelessWidget {
           children: [
             Text(
               initial,
+              maxLines: 1,
               style: AppTextStyles.title(
                 context,
               ).copyWith(color: AppColors.tint, fontSize: context.sp(17)),
             ),
-            Positioned(
-              right: context.r(2),
-              bottom: context.r(3),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: AppColors.green,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFF1B1412),
-                    width: context.r(2),
+            if (awake)
+              Positioned(
+                right: 0,
+                bottom: context.r(1),
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    color: AppColors.ground,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(context.r(2)),
+                    child: DecoratedBox(
+                      decoration: const BoxDecoration(
+                        color: AppColors.green,
+                        shape: BoxShape.circle,
+                      ),
+                      child: SizedBox(
+                        width: context.r(7),
+                        height: context.r(7),
+                      ),
+                    ),
                   ),
                 ),
-                child: SizedBox(width: context.r(6), height: context.r(6)),
               ),
-            ),
           ],
         ),
       ),
@@ -148,21 +136,51 @@ class _TitleBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('他此刻 · 第 ${companion.day} 天', style: AppTextStyles.micro(context)),
         Text(
-          '在${companion.place} · ${companion.action}',
-          style: AppTextStyles.title(
-            context,
-          ).copyWith(fontSize: context.sp(13)),
+          '他此刻 · 第 ${companion.day} 天',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.caption(context).copyWith(
+            fontSize: context.sp(10.5),
+            letterSpacing: 0.8,
+            color: AppColors.inkFaint,
+            height: 1.35,
+          ),
         ),
-        Text(
-          '11月2日 周日 · 雨 1.7°C',
-          style: AppTextStyles.caption(
-            context,
-          ).copyWith(fontSize: context.sp(8.5)),
+        Padding(
+          padding: EdgeInsets.only(top: context.r(1)),
+          child: Text(
+            '在${companion.place} · ${companion.action}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.title(
+              context,
+            ).copyWith(fontSize: context.sp(15), fontWeight: FontWeight.w600),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.only(top: context.r(2)),
+          child: Text(
+            _meta(companion),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.caption(context).copyWith(
+              fontSize: context.sp(11.5),
+              color: AppColors.inkSecondary,
+              height: 1.45,
+            ),
+          ),
         ),
       ],
     );
+  }
+
+  String _meta(Companion companion) {
+    final date = companion.lastSeen;
+    final weather = companion.weather;
+    if (date.isEmpty) return weather;
+    if (weather.isEmpty) return date;
+    return '$date · $weather';
   }
 }
 
@@ -173,57 +191,98 @@ class _Stats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _Stat(label: '体力', value: '${companion.energy}%'),
-        SizedBox(width: AppSpacing.xs(context)),
-        _Stat(label: '心情', value: companion.mood),
-        SizedBox(width: AppSpacing.xs(context)),
-        const _Stat(label: '在店', value: '3 小时'),
-      ],
+    return Padding(
+      padding: EdgeInsets.only(top: context.r(12)),
+      child: Row(
+        key: const Key('now_stats'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: _Stat(
+              label: '体力',
+              value: '${companion.energy}%',
+              divider: false,
+            ),
+          ),
+          Expanded(
+            child: _Stat(label: '心情', value: companion.mood),
+          ),
+          const Expanded(
+            child: _Stat(label: '在店', value: '3 小时'),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
+  const _Stat({required this.label, required this.value, this.divider = true});
 
   final String label;
   final String value;
+  final bool divider;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.sm(context)),
-          color: const Color(0x0BFFFFFF),
-          border: Border.all(color: AppColors.divider),
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm(context),
-            vertical: AppSpacing.xs(context),
+    final body = Padding(
+      padding: EdgeInsets.only(
+        left: divider ? context.r(10) : 0,
+        right: context.r(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.caption(context).copyWith(
+              fontSize: context.sp(10),
+              color: AppColors.inkFaint,
+              height: 1.3,
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.micro(context),
-              ),
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.bodyStrong(
-                  context,
-                ).copyWith(fontSize: context.sp(11)),
-              ),
-            ],
+          Padding(
+            padding: EdgeInsets.only(top: context.r(1)),
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.bodyStrong(
+                context,
+              ).copyWith(fontSize: context.sp(13), height: 1.35),
+            ),
           ),
+        ],
+      ),
+    );
+    if (!divider) return body;
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        border: Border(left: BorderSide(color: AppColors.border, width: 0.5)),
+      ),
+      child: body,
+    );
+  }
+}
+
+class _Quote extends StatelessWidget {
+  const _Quote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(top: context.r(12)),
+      child: Text(
+        '“把晒了一下午的旧书一本本收回来，码回后院。”',
+        key: const Key('now_quote'),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: AppTextStyles.body(context).copyWith(
+          fontSize: context.sp(12.5),
+          height: 1.65,
+          color: AppColors.inkSecondary,
         ),
       ),
     );

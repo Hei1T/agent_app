@@ -58,7 +58,7 @@ class Dock extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: context.r(6),
-              vertical: context.r(4),
+              vertical: context.r(2),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -97,19 +97,19 @@ class _DockItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: SizedBox(
-        width: context.r(50),
-        height: context.r(44),
+        width: context.r(46),
+        height: context.r(48),
         child: Stack(
           alignment: Alignment.center,
           children: [
             if (selected)
               DecoratedBox(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(context.r(19)),
+                  borderRadius: BorderRadius.circular(context.r(12)),
                   gradient: const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0x33FFFFFF), Color(0x0FFFFFFF)],
+                    colors: [Color(0x21FFFFFF), Color(0x0FFFFFFF)],
                   ),
                   border: Border.all(color: Color(0x29FFFFFF)),
                   boxShadow: const [
@@ -141,6 +141,7 @@ class _DockItem extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.micro(context).copyWith(
+                    fontSize: context.sp(9.5),
                     letterSpacing: 0.02,
                     color: selected ? AppColors.ink : AppColors.inkFaint,
                   ),

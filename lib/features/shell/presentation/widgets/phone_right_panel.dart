@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/responsive/responsive.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
 /// 手机横屏右侧场景栏：设计稿 RightPanel，照片 + 缩略图条 + 引用 + 他的日子。
@@ -83,42 +82,16 @@ class PhoneRightPanel extends StatelessWidget {
                 ),
               ),
               Container(
-                color: const Color(0x99120B08),
-                padding: EdgeInsets.all(context.r(8)),
-                child: SizedBox(
-                  height: context.r(48),
-                  child: Row(
-                    children: [
-                      for (var i = 0; i < 3; i++) ...[
-                        if (i > 0) SizedBox(width: context.r(6)),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.sm(context),
-                            ),
-                            child: Image.asset(
-                              i == 0
-                                  ? 'assets/media/book1.jpg'
-                                  : i == 1
-                                  ? 'assets/media/book2.jpg'
-                                  : 'assets/media/book3.jpg',
-                              fit: BoxFit.cover,
-                              cacheWidth: 220,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                color: const Color(0x99120B08),
                 padding: EdgeInsets.fromLTRB(
                   context.r(14),
                   context.r(10),
                   context.r(14),
                   context.r(12),
+                ),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: AppColors.border, width: 0.5),
+                  ),
                 ),
                 child: Text(
                   '“手上一股子太阳晒过的纸味儿，暖烘烘的。你闻不着，可惜。”',

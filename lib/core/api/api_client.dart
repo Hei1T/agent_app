@@ -12,7 +12,11 @@ class AuthResult {
 }
 
 class CreditBalance {
-  const CreditBalance({required this.balance, required this.reserved, required this.available});
+  const CreditBalance({
+    required this.balance,
+    required this.reserved,
+    required this.available,
+  });
   final int balance;
   final int reserved;
   final int available;
@@ -24,14 +28,23 @@ class CreditBalance {
 }
 
 class LifeEvent {
-  const LifeEvent({required this.time, required this.detail, this.feeling = ''});
+  const LifeEvent({
+    required this.time,
+    required this.detail,
+    this.feeling = '',
+  });
   final String time;
   final String detail;
   final String feeling;
 }
 
 class LifePerson {
-  const LifePerson({required this.name, required this.role, required this.note, required this.place});
+  const LifePerson({
+    required this.name,
+    required this.role,
+    required this.note,
+    required this.place,
+  });
   final String name;
   final String role;
   final String note;
@@ -40,11 +53,22 @@ class LifePerson {
 
 class LifeSnapshot {
   const LifeSnapshot({
-    required this.available, required this.place, required this.condition,
-    required this.energy, required this.mood, required this.satiety,
-    required this.social, required this.awake, required this.transit,
-    required this.clock, required this.weather, required this.events,
-    required this.people, required this.items, this.diary,
+    required this.available,
+    required this.place,
+    required this.condition,
+    required this.energy,
+    required this.mood,
+    required this.satiety,
+    required this.social,
+    required this.awake,
+    required this.transit,
+    required this.clock,
+    required this.weather,
+    required this.day,
+    required this.events,
+    required this.people,
+    required this.items,
+    this.diary,
   });
   final bool available;
   final String place;
@@ -57,12 +81,14 @@ class LifeSnapshot {
   final Map<String, dynamic>? transit;
   final String clock;
   final String weather;
+  final String day;
   final List<LifeEvent> events;
   final List<LifePerson> people;
   final List<Map<String, dynamic>> items;
   final String? diary;
   factory LifeSnapshot.fromJson(Map<String, dynamic> json) {
-    final world = (json['world'] as Map<String, dynamic>?) ?? const <String, dynamic>{};
+    final world =
+        (json['world'] as Map<String, dynamic>?) ?? const <String, dynamic>{};
     final rawEvents = (json['events'] as List<dynamic>?) ?? const [];
     final rawPeople = (json['people'] as List<dynamic>?) ?? const [];
     final rawItems = (json['items'] as List<dynamic>?) ?? const [];
@@ -76,13 +102,15 @@ class LifeSnapshot {
       social: (json['social'] as num?)?.toDouble() ?? 0,
       awake: json['awake'] != false,
       transit: json['transit'] as Map<String, dynamic>?,
-      clock: (world['clock_label'] as String?) ?? '',
-      weather: (world['weather'] as String?) ?? '',
+      clock: _dayLabel(json['day'] as String?),
+      weather: _weatherLabel(world['weather']),
+      day: (json['day'] as String?) ?? '',
       events: rawEvents.map((e) {
         final m = e as Map<String, dynamic>;
         final clock = (m['clock_min'] as num?)?.toInt() ?? 0;
         return LifeEvent(
-          time: '${(clock ~/ 60).toString().padLeft(2, '0')}:${(clock % 60).toString().padLeft(2, '0')}',
+          time:
+              '${(clock ~/ 60).toString().padLeft(2, '0')}:${(clock % 60).toString().padLeft(2, '0')}',
           detail: (m['detail'] as String?) ?? '',
           feeling: (m['feeling'] as String?) ?? '',
         );
@@ -103,7 +131,14 @@ class LifeSnapshot {
 }
 
 class RemoteMoment {
-  const RemoteMoment({required this.id, required this.author, required this.time, required this.place, required this.text, required this.photos});
+  const RemoteMoment({
+    required this.id,
+    required this.author,
+    required this.time,
+    required this.place,
+    required this.text,
+    required this.photos,
+  });
   final String id;
   final String author;
   final String time;
@@ -120,12 +155,24 @@ class ChatEvent {
 
 class ApiClient {
   ApiClient({this.token, TokenStorage? storage})
-      : storage = storage ?? TokenStorage(),
-        _dio = Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl, connectTimeout: const Duration(seconds: 10), receiveTimeout: const Duration(seconds: 120))) {
-    _dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
-      if (token != null && token!.isNotEmpty) options.headers['Authorization'] = 'Bearer $token';
-      handler.next(options);
-    }));
+    : storage = storage ?? TokenStorage(),
+      _dio = Dio(
+        BaseOptions(
+          baseUrl: ApiEndpoints.baseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 120),
+        ),
+      ) {
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (token != null && token!.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          handler.next(options);
+        },
+      ),
+    );
   }
 
   String? token;
@@ -160,7 +207,10 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> _post(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
     try {
       return _data(await _dio.post<dynamic>(path, data: body));
     } on DioException catch (error) {
@@ -169,20 +219,33 @@ class ApiClient {
   }
 
   Future<AuthResult> login(String email, String password) async {
-    final data = await _post(ApiEndpoints.login, {'email': email, 'password': password});
-    final result = AuthResult(token: data['accessToken'] as String, email: (data['account']?['email'] as String?) ?? email);
+    final data = await _post(ApiEndpoints.login, {
+      'email': email,
+      'password': password,
+    });
+    final result = AuthResult(
+      token: data['accessToken'] as String,
+      email: (data['account']?['email'] as String?) ?? email,
+    );
     token = result.token;
     return result;
   }
 
   Future<AuthResult> register(String email, String password) async {
-    final data = await _post(ApiEndpoints.register, {'email': email, 'password': password});
-    final result = AuthResult(token: data['accessToken'] as String, email: (data['account']?['email'] as String?) ?? email);
+    final data = await _post(ApiEndpoints.register, {
+      'email': email,
+      'password': password,
+    });
+    final result = AuthResult(
+      token: data['accessToken'] as String,
+      email: (data['account']?['email'] as String?) ?? email,
+    );
     token = result.token;
     return result;
   }
 
-  Future<LifeSnapshot> life() async => LifeSnapshot.fromJson(await _get(ApiEndpoints.life));
+  Future<LifeSnapshot> life() async =>
+      LifeSnapshot.fromJson(await _get(ApiEndpoints.life));
 
   Future<List<RemoteMoment>> feed() async {
     final data = await _get('${ApiEndpoints.feed}?limit=30');
@@ -192,10 +255,14 @@ class ApiClient {
       final photos = <String>[];
       final rawPhotos = m['photos'];
       if (rawPhotos is List) photos.addAll(rawPhotos.whereType<String>());
-      if (photos.isEmpty && m['photo_url'] is String) photos.add(m['photo_url'] as String);
+      if (photos.isEmpty && m['photo_url'] is String) {
+        photos.add(m['photo_url'] as String);
+      }
       final ts = (m['ts'] as String?) ?? '';
       return RemoteMoment(
-        id: (m['id'] as num?)?.toString() ?? 'post-${DateTime.now().microsecondsSinceEpoch}',
+        id:
+            (m['id'] as num?)?.toString() ??
+            'post-${DateTime.now().microsecondsSinceEpoch}',
         author: '笨笨',
         time: ts.length >= 16 ? ts.substring(11, 16) : '',
         place: (m['place'] as String?) ?? '',
@@ -205,13 +272,17 @@ class ApiClient {
     }).toList();
   }
 
-  Future<CreditBalance> credits() async => CreditBalance.fromJson(await _get(ApiEndpoints.credits));
+  Future<CreditBalance> credits() async =>
+      CreditBalance.fromJson(await _get(ApiEndpoints.credits));
 
   Stream<ChatEvent> streamChat(String message) async* {
     final response = await _dio.post<ResponseBody>(
       ApiEndpoints.chat,
       data: {'message': message},
-      options: Options(responseType: ResponseType.stream, validateStatus: (status) => status != null),
+      options: Options(
+        responseType: ResponseType.stream,
+        validateStatus: (status) => status != null,
+      ),
     );
     final body = response.data;
     if (body == null) throw const ApiException(502, '上游没有返回流');
@@ -228,9 +299,12 @@ class ApiClient {
     }
     var event = '';
     final data = StringBuffer();
-    await for (final line in utf8.decoder.bind(body.stream).transform(const LineSplitter())) {
+    await for (final line
+        in utf8.decoder.bind(body.stream).transform(const LineSplitter())) {
       if (line.isEmpty) {
-        if (data.isNotEmpty) yield ChatEvent(event.isEmpty ? 'message' : event, data.toString());
+        if (data.isNotEmpty) {
+          yield ChatEvent(event.isEmpty ? 'message' : event, data.toString());
+        }
         event = '';
         data.clear();
         continue;
@@ -241,6 +315,38 @@ class ApiClient {
         data.write(line.substring(5).trimLeft());
       }
     }
-    if (data.isNotEmpty) yield ChatEvent(event.isEmpty ? 'message' : event, data.toString());
+    if (data.isNotEmpty) {
+      yield ChatEvent(event.isEmpty ? 'message' : event, data.toString());
+    }
   }
+}
+
+String _dayLabel(String? isoDay) {
+  if (isoDay == null || isoDay.isEmpty) return '';
+  final date = DateTime.tryParse(isoDay);
+  if (date == null) return isoDay;
+  const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  return '${date.month}月${date.day}日 ${weekdays[date.weekday - 1]}';
+}
+
+String _weatherLabel(Object? raw) {
+  if (raw is String) return raw;
+  if (raw is! Map) return '';
+  final condition = raw['condition']?.toString() ?? '';
+  final rain = raw['rain'] == true;
+  final temp = (raw['temp_c'] as num?)?.toDouble();
+  final label = switch (condition) {
+    'clear' => '晴',
+    'cloudy' => '阴',
+    'overcast' => '阴',
+    'rain' || 'rainy' => '雨',
+    'snow' || 'snowy' => '雪',
+    'fog' || 'foggy' => '雾',
+    _ => rain ? '雨' : condition,
+  };
+  if (temp == null) return label;
+  final value = temp == temp.roundToDouble()
+      ? temp.toStringAsFixed(0)
+      : temp.toStringAsFixed(1);
+  return '$label $value°C';
 }

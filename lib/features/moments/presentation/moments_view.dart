@@ -15,6 +15,7 @@ import '../../../shared/widgets/app_icon_button.dart';
 import '../../../shared/widgets/app_icon.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/auth/auth_controller.dart';
+import '../data/demo_moments.dart';
 import 'moment_overlay_provider.dart';
 import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/photo_overlay.dart';
@@ -30,7 +31,6 @@ class MomentsView extends ConsumerStatefulWidget {
 }
 
 class _MomentsViewState extends ConsumerState<MomentsView> {
-
   @override
   Widget build(BuildContext context) {
     final liked = ref.watch(likedMomentsProvider);
@@ -47,34 +47,21 @@ class _MomentsViewState extends ConsumerState<MomentsView> {
           ),
         ],
       ),
-      child: ref.watch(feedProvider).when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Padding(padding: EdgeInsets.all(AppSpacing.lg(context)), child: Text('朋友圈暂时连不上：$error', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall))),
-        data: (remote) => FadeMask(
-          child: remote.isEmpty
-              ? Center(child: Text('还没有动态', style: Theme.of(context).textTheme.bodySmall))
-              : ListView.separated(
-                  padding: EdgeInsets.fromLTRB(
-                    AppSpacing.pageH(context),
-                    context.r(62),
-                    AppSpacing.pageH(context),
-                    context.isPortrait ? context.r(112) : AppSpacing.lg(context),
-                  ),
-                  itemCount: remote.length,
-                  separatorBuilder: (context, index) => SizedBox(height: AppSpacing.md(context)),
-                  itemBuilder: (context, index) {
-                    final item = _toMoment(remote[index]);
-                    return MomentCard(
-                      moment: item,
-                      liked: liked.contains(item.id),
-                      comments: comments[item.id] ?? item.comments,
-                      onLike: () => _toggle(item.id),
-                      onTap: () => _open(item),
-                    );
-                  },
-                ),
-        ),
-      ),
+      child: ref
+          .watch(feedProvider)
+          .when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => _ErrorState(message: error.toString()),
+            data: (remote) => _Feed(
+              moments: remote.isEmpty
+                  ? demoMoments
+                  : remote.map(_toMoment).toList(),
+              liked: liked,
+              comments: comments,
+              onToggleLike: _toggle,
+              onOpen: _open,
+            ),
+          ),
     );
   }
 
@@ -84,7 +71,7 @@ class _MomentsViewState extends ConsumerState<MomentsView> {
     time: item.time,
     place: item.place,
     text: item.text,
-    photos: const [],
+    photos: item.photos,
     likes: const [],
     comments: const [],
   );
@@ -126,8 +113,87 @@ class _MomentsViewState extends ConsumerState<MomentsView> {
       ),
     );
   }
+
   void _showCamera(BuildContext context) {
     showPhotoPicker(context, withNote: true);
+  }
+}
+
+/// 朋友圈信息流：每条动态平铺在页面底色上，只有底部分隔线。
+class _Feed extends StatelessWidget {
+  const _Feed({
+    required this.moments,
+    required this.liked,
+    required this.comments,
+    required this.onToggleLike,
+    required this.onOpen,
+  });
+
+  final List<Moment> moments;
+  final Set<String> liked;
+  final Map<String, List<MomentComment>> comments;
+  final ValueChanged<String> onToggleLike;
+  final ValueChanged<Moment> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    if (moments.isEmpty) {
+      return Center(
+        child: Text(
+          '还没有动态',
+          style: AppTextStyles.body(
+            context,
+          ).copyWith(fontSize: context.sp(12), color: AppColors.inkMuted),
+        ),
+      );
+    }
+    return FadeMask(
+      child: ListView.separated(
+        key: const Key('moments_feed'),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.pageH(context),
+          context.r(62),
+          AppSpacing.pageH(context),
+          context.isPortrait ? context.r(112) : AppSpacing.lg(context),
+        ),
+        itemCount: moments.length,
+        separatorBuilder: (context, index) => SizedBox(height: context.r(10)),
+        itemBuilder: (context, index) {
+          final item = moments[index];
+          return MomentCard(
+            key: ValueKey(item.id),
+            moment: item,
+            liked: liked.contains(item.id),
+            comments: comments[item.id] ?? item.comments,
+            divider: index != moments.length - 1,
+            onLike: () => onToggleLike(item.id),
+            onTap: () => onOpen(item),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg(context)),
+        child: Text(
+          '朋友圈暂时连不上：$message',
+          textAlign: TextAlign.center,
+          style: AppTextStyles.body(
+            context,
+          ).copyWith(fontSize: context.sp(12), color: AppColors.inkMuted),
+        ),
+      ),
+    );
   }
 }
 
@@ -171,7 +237,11 @@ class _CameraSheetState extends State<_CameraSheet> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.camera_alt_outlined, size: 32, color: Colors.white70),
+                      const Icon(
+                        Icons.camera_alt_outlined,
+                        size: 32,
+                        color: Colors.white70,
+                      ),
                       SizedBox(height: AppSpacing.md(context)),
                       Text('打开相机或相册', style: AppTextStyles.caption(context)),
                     ],
@@ -192,17 +262,26 @@ class _CameraSheetState extends State<_CameraSheet> {
             Row(
               children: [
                 Expanded(
-                  child: _PhotoButton(label: '拍一张', onTap: () => _pick(ImageSource.camera)),
+                  child: _PhotoButton(
+                    label: '拍一张',
+                    onTap: () => _pick(ImageSource.camera),
+                  ),
                 ),
                 SizedBox(width: AppSpacing.sm(context)),
                 Expanded(
-                  child: _PhotoButton(label: '从相册选择', onTap: () => _pick(ImageSource.gallery)),
+                  child: _PhotoButton(
+                    label: '从相册选择',
+                    onTap: () => _pick(ImageSource.gallery),
+                  ),
                 ),
               ],
             ),
             if (_photo != null) ...[
               SizedBox(height: AppSpacing.sm(context)),
-              _PhotoButton(label: '使用这张', onTap: () => Navigator.of(context).pop()),
+              _PhotoButton(
+                label: '使用这张',
+                onTap: () => Navigator.of(context).pop(),
+              ),
             ],
           ],
         ),
@@ -228,9 +307,7 @@ class _PhotoButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.pill(context)),
           border: Border.all(color: AppColors.border),
         ),
-        child: Center(
-          child: Text(label, style: AppTextStyles.body(context)),
-        ),
+        child: Center(child: Text(label, style: AppTextStyles.body(context))),
       ),
     );
   }

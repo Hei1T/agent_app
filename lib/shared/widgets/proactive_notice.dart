@@ -17,7 +17,8 @@ class ProactiveNotice extends StatefulWidget {
 }
 
 class _ProactiveNoticeState extends State<ProactiveNotice> {
-  bool _visible = true;
+  // 设计稿默认不弹主动消息；避免首屏盖住 Header。
+  bool _visible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -81,10 +82,10 @@ class _ProactiveNoticeState extends State<ProactiveNotice> {
                       _Avatar(),
                       SizedBox(width: context.r(11)),
                       Expanded(
-                    child: _Main(
-                      onReply: widget.onOpen ?? () => context.go('/chat'),
-                    ),
-                  ),
+                        child: _Main(
+                          onReply: widget.onOpen ?? () => context.go('/chat'),
+                        ),
+                      ),
                       SizedBox(width: context.r(11)),
                       _Close(onTap: () => setState(() => _visible = false)),
                     ],
@@ -117,10 +118,9 @@ class _Avatar extends StatelessWidget {
             child: Center(
               child: Text(
                 '笨',
-                style: AppTextStyles.bodyStrong(context).copyWith(
-                  color: AppColors.tint,
-                  fontSize: context.sp(14),
-                ),
+                style: AppTextStyles.bodyStrong(
+                  context,
+                ).copyWith(color: AppColors.tint, fontSize: context.sp(14)),
               ),
             ),
           ),
@@ -190,17 +190,18 @@ class _Main extends StatelessWidget {
         Container(
           padding: EdgeInsets.only(top: context.r(8)),
           decoration: const BoxDecoration(
-            border: Border(top: BorderSide(color: Color(0x13FFFFFF), width: 0.5)),
+            border: Border(
+              top: BorderSide(color: Color(0x13FFFFFF), width: 0.5),
+            ),
           ),
           child: Row(
             children: [
               Expanded(
                 child: Text(
                   '他在等你说句话',
-                  style: AppTextStyles.micro(context).copyWith(
-                    fontSize: context.sp(7.5),
-                    letterSpacing: 0.3,
-                  ),
+                  style: AppTextStyles.micro(
+                    context,
+                  ).copyWith(fontSize: context.sp(7.5), letterSpacing: 0.3),
                 ),
               ),
               _Reply(onTap: onReply),

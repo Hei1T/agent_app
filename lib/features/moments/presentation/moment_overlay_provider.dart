@@ -9,4 +9,6 @@ final momentOverlayProvider = StateProvider<Moment?>((ref) => null);
 final likedMomentsProvider = StateProvider<Set<String>>((ref) => <String>{});
 
 /// 列表与详情共享的留言。
-final momentCommentsProvider = StateProvider<Map<String, List<MomentComment>>>((ref) => {});
+final momentCommentsProvider = StateProvider<Map<String, List<MomentComment>>>(
+  (ref) => {},
+);

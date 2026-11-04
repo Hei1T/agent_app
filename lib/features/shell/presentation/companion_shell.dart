@@ -67,11 +67,11 @@ class CompanionShell extends StatelessWidget {
             ),
           ),
           Positioned.fill(
-            left: !chat && !portrait ? context.r(58) : 0,
-            right: !chat && !portrait ? rightWidth : 0,
+            left: !portrait ? context.r(58) : 0,
+            right: !portrait ? rightWidth : 0,
             child: child,
           ),
-          if (!chat && !portrait)
+          if (!portrait)
             Positioned(
               top: 0,
               right: 0,
@@ -83,7 +83,7 @@ class CompanionShell extends StatelessWidget {
                 child: PhoneRightPanel(),
               ),
             ),
-          if (!chat && !portrait)
+          if (!portrait)
             Positioned(
               left: 0,
               top: 0,
@@ -118,6 +118,5 @@ class CompanionShell extends StatelessWidget {
         ],
       ),
     );
+  }
 }
-}
-
