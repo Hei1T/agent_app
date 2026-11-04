@@ -42,89 +42,95 @@ class _TimelineRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: context.isPortrait ? context.r(12) : AppSpacing.md(context),
-        vertical: context.r(9),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(context.r(13)),
-            child: SizedBox(
-              width: context.r(40),
-              height: context.r(40),
-              child: Image.asset(
-                entry.photo,
-                fit: BoxFit.cover,
-                cacheWidth: 120,
-              ),
-            ),
+    return Stack(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: context.isPortrait ? context.r(12) : AppSpacing.md(context),
+            vertical: context.r(9),
           ),
-          SizedBox(width: context.r(10)),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(context.r(13)),
+                child: SizedBox(
+                  width: context.r(40),
+                  height: context.r(40),
+                  child: Image.asset(
+                    entry.photo,
+                    fit: BoxFit.cover,
+                    cacheWidth: 120,
+                  ),
+                ),
+              ),
+              SizedBox(width: context.r(10)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        entry.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.bodyStrong(
-                          context,
-                        ).copyWith(fontSize: context.sp(12.5)),
-                      ),
-                    ),
-                    if (entry.unread > 0) ...[
-                      DecoratedBox(
-                        decoration: const BoxDecoration(
-                          color: AppColors.danger,
-                          shape: BoxShape.circle,
-                        ),
-                        child: SizedBox(
-                          width: context.r(16),
-                          height: context.r(16),
-                          child: Center(
-                            child: Text(
-                              '${entry.unread}',
-                              style: AppTextStyles.micro(context).copyWith(
-                                color: Colors.white,
-                                fontSize: context.sp(7.5),
-                              ),
-                            ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            entry.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.bodyStrong(
+                              context,
+                            ).copyWith(fontSize: context.sp(12.5)),
                           ),
                         ),
-                      ),
-                      SizedBox(width: AppSpacing.xs(context)),
-                    ],
+                        Text(
+                          entry.time,
+                          style: AppTextStyles.caption(
+                            context,
+                          ).copyWith(fontSize: context.sp(9.5)),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: AppSpacing.xxs(context)),
                     Text(
-                      entry.time,
-                      style: AppTextStyles.caption(
+                      entry.detail,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.body(
                         context,
-                      ).copyWith(fontSize: context.sp(9)),
+                      ).copyWith(fontSize: context.sp(10.5)),
                     ),
                   ],
                 ),
-                SizedBox(height: AppSpacing.xxs(context)),
-                Text(
-                  entry.detail,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.body(
-                    context,
-                  ).copyWith(fontSize: context.sp(10.5)),
+              ),
+            ],
+          ),
+        ),
+        if (entry.unread > 0)
+          Positioned(
+            right: context.r(10),
+            top: context.r(30),
+            child: Container(
+              constraints: BoxConstraints(minWidth: context.r(17)),
+              height: context.r(17),
+              padding: EdgeInsets.symmetric(horizontal: context.r(5)),
+              decoration: BoxDecoration(
+                color: AppColors.danger,
+                borderRadius: BorderRadius.circular(context.r(9)),
+              ),
+              child: Center(
+                child: Text(
+                  '${entry.unread}',
+                  style: AppTextStyles.micro(context).copyWith(
+                    color: Colors.white,
+                    fontSize: context.sp(9),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ],
+              ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
