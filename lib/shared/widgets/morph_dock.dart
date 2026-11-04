@@ -68,10 +68,7 @@ class _MorphDockState extends State<MorphDock>
       reverseCurve: Curves.easeInCubic,
     );
     if (widget.chatActive) {
-      _controller.value = 0;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _controller.forward();
-      });
+      _startForward();
     }
   }
 
@@ -80,7 +77,7 @@ class _MorphDockState extends State<MorphDock>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.chatActive != widget.chatActive) {
       if (widget.chatActive) {
-        _controller.forward();
+        _startForward();
       } else {
         _controller.reverse();
         _focus.unfocus();
@@ -222,14 +219,16 @@ class _DockShell extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              IgnorePointer(
-                ignoring: t > 0.15,
-                child: Opacity(
-                  opacity: (1 - t * 1.35).clamp(0.0, 1.0).toDouble(),
-                  child: _NavRow(
-                    index: index,
-                    onSelect: onSelect,
-                    onChat: onChat,
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: t > 0.15,
+                  child: Opacity(
+                    opacity: (1 - t * 1.35).clamp(0.0, 1.0).toDouble(),
+                    child: _NavRow(
+                      index: index,
+                      onSelect: onSelect,
+                      onChat: onChat,
+                    ),
                   ),
                 ),
               ),
@@ -401,5 +400,15 @@ class _SendCircle extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+extension on _MorphDockState {
+  void _startForward() {
+    _controller.value = 0;
+    Future<void>.delayed(const Duration(milliseconds: 140), () {
+      if (!mounted || !widget.chatActive) return;
+      _controller.forward(from: 0);
+    });
   }
 }

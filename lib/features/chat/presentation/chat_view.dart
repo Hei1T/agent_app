@@ -47,7 +47,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
   Widget build(BuildContext context) {
     final pendingPhoto = ref.watch(pendingChatPhotoProvider);
     final pendingNote = ref.watch(pendingChatNoteProvider);
-    final portrait = context.isPortrait;
+    final landscape = MediaQuery.sizeOf(context).width > 600;
     ref.listen<String?>(chatOutboxProvider, (previous, next) {
       if (next == null) return;
       ref.read(chatOutboxProvider.notifier).state = null;
@@ -95,7 +95,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
                 AppSpacing.pageH(context),
                 context.r(62),
                 AppSpacing.pageH(context),
-                portrait ? context.r(104) : AppSpacing.sm(context),
+                landscape ? AppSpacing.sm(context) : context.r(104),
               ),
               children: [
                 _DayDivider(label: '今天 · 15:02'),
@@ -180,7 +180,7 @@ class _ChatViewState extends ConsumerState<ChatView> {
               ],
             ),
           ),
-          if (!portrait) ChatComposer(controller: _controller, onSend: _send),
+          if (landscape) ChatComposer(controller: _controller, onSend: _send),
         ],
       ),
     );
