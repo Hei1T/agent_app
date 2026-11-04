@@ -97,6 +97,7 @@ class AppSheetHostState extends State<AppSheetHost> {
     final route = PageRouteBuilder<void>(
       opaque: false,
       barrierColor: const Color(0x85000000),
+      barrierDismissible: true,
       transitionDuration: const Duration(milliseconds: 180),
       reverseTransitionDuration: const Duration(milliseconds: 160),
       pageBuilder: (context, animation, secondaryAnimation) => ColoredBox(
@@ -133,14 +134,22 @@ class AppSheetHostState extends State<AppSheetHost> {
   Widget build(BuildContext context) {
     return Material(
       type: MaterialType.transparency,
-      child: IgnorePointer(
-        ignoring: !_open,
-        child: Navigator(
+      child: PopScope(
+        canPop: !_open,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop && _open) {
+            _navigator.currentState?.maybePop();
+          }
+        },
+        child: IgnorePointer(
+          ignoring: !_open,
+          child: Navigator(
         key: _navigator,
         onGenerateRoute: (_) => PageRouteBuilder<void>(
           opaque: false,
           pageBuilder: (context, animation, secondaryAnimation) =>
               const SizedBox.shrink(),
+          ),
           ),
         ),
       ),
