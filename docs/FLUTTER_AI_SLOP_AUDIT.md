@@ -1,3 +1,5 @@
+> 本轮范围调整：数据 WIP，不算设计问题；设计去味以 FLUTTER_DESIGN_DESLOP.md 为准。
+
 # Flutter App AI 味审查
 
 > 范围：只审 Flutter App，不含 admin-web  
