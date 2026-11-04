@@ -99,7 +99,18 @@ class AppSheetHostState extends State<AppSheetHost>
       barrierDismissible: dismissible,
       transitionDuration: const Duration(milliseconds: 180),
       reverseTransitionDuration: const Duration(milliseconds: 160),
-      pageBuilder: (context, animation, secondaryAnimation) => child,
+      pageBuilder: (context, animation, secondaryAnimation) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context).pop(),
+              child: const ColoredBox(color: Color(0x8C000000)),
+            ),
+          ),
+          child,
+        ],
+      ),
     );
     await nav.push(route);
     if (mounted) {
@@ -123,9 +134,17 @@ class AppSheetHostState extends State<AppSheetHost>
       barrierDismissible: true,
       transitionDuration: const Duration(milliseconds: 180),
       reverseTransitionDuration: const Duration(milliseconds: 160),
-      pageBuilder: (context, animation, secondaryAnimation) => ColoredBox(
-        color: const Color(0x8C000000),
-        child: sheet,
+      pageBuilder: (context, animation, secondaryAnimation) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context).pop(),
+              child: const ColoredBox(color: Color(0x8C000000)),
+            ),
+          ),
+          sheet,
+        ],
       ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         final curved = CurvedAnimation(
