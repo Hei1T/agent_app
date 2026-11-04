@@ -106,7 +106,7 @@ class _MorphDockState extends State<MorphDock>
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final outer = context.r(12);
+        final outer = context.r(8);
         final sendWidth = context.r(44);
         final gap = context.r(8);
         final startWidth = context.r(252);
@@ -195,25 +195,26 @@ class _DockShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(context.r(999));
+    final fill = Color.lerp(
+      const Color(0x521B1411),
+      const Color(0xB8140F0D),
+      t,
+    )!;
     return ClipRRect(
       borderRadius: radius,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 26, sigmaY: 26),
+        filter: ImageFilter.blur(sigmaX: 26 - 8 * t, sigmaY: 26 - 8 * t),
         child: DecoratedBox(
           key: const Key('phone_morph_dock'),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0x521B1411), Color(0x300D0A09)],
-            ),
+            color: fill,
             borderRadius: radius,
-            border: Border.all(color: const Color(0x2BFFFFFF)),
+            border: Border.all(color: const Color(0x2BFFFFFF), width: 0.5),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x5C000000),
-                blurRadius: 42,
-                offset: Offset(0, 20),
+                color: Color(0x3D000000),
+                blurRadius: 26,
+                offset: Offset(0, 10),
               ),
             ],
           ),
@@ -232,11 +233,17 @@ class _DockShell extends StatelessWidget {
                   ),
                 ),
               ),
-              IgnorePointer(
-                ignoring: !chatActive || t < 0.65,
-                child: Opacity(
-                  opacity: t,
-                  child: _InputRow(input: input, focus: focus, onSend: onSend),
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: !chatActive || t < 0.65,
+                  child: Opacity(
+                    opacity: t,
+                    child: _InputRow(
+                      input: input,
+                      focus: focus,
+                      onSend: onSend,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -337,6 +344,7 @@ class _InputRow extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: context.r(14)),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(
             Icons.search_rounded,
@@ -351,7 +359,12 @@ class _InputRow extends StatelessWidget {
               maxLines: 1,
               textInputAction: TextInputAction.send,
               onSubmitted: (_) => onSend(),
-              style: TextStyle(color: AppColors.ink, fontSize: context.sp(13)),
+              textAlignVertical: TextAlignVertical.center,
+              style: TextStyle(
+                color: AppColors.ink,
+                fontSize: context.sp(13),
+                height: 1.2,
+              ),
               decoration: const InputDecoration(
                 hintText: '跟他说点什么...',
                 hintStyle: TextStyle(color: AppColors.inkFaint),

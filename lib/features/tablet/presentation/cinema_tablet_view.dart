@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/responsive/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/models/companion.dart';
 import 'widgets/cinema_chat_overlay.dart';
 import 'widgets/cinema_header.dart';
@@ -58,15 +59,12 @@ class CinemaTabletView extends StatelessWidget {
   }
 
   void _showMore(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.all(AppSpacing.lg(context)),
-          child: Text('更多', style: Theme.of(context).textTheme.titleMedium),
-        ),
+    showAppSheet(
+      context,
+      title: '更多',
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg(context)),
+        child: Text('更多', style: Theme.of(context).textTheme.titleMedium),
       ),
     );
   }

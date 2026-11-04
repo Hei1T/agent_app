@@ -15,13 +15,17 @@ Future<void> showAppSheet(
   required String title,
   required Widget child,
   bool full = false,
+  bool? showCancel,
   double heightFactor = 0.55,
+  double fullHeightFactor = 0.92,
 }) {
   final host = AppSheetHost.hostKey.currentState;
   final body = _AppSheetBody(
     title: title,
     full: full,
+    showCancel: showCancel ?? full,
     heightFactor: heightFactor,
+    fullHeightFactor: fullHeightFactor,
     child: child,
   );
   if (host != null) return host.show(body);
@@ -83,15 +87,12 @@ class AppSheetHostState extends State<AppSheetHost>
     return super.didPopRoute();
   }
 
-  Future<void> showRaw(
-    Widget child, {
-    bool dismissible = false,
-  }) async {
+  Future<void> showRaw(Widget child, {bool dismissible = false}) async {
     final nav = _navigator.currentState;
     if (nav == null) return;
-    ProviderScope.containerOf(context)
-        .read(appSheetOpenProvider.notifier)
-        .state = true;
+    ProviderScope.containerOf(
+      context,
+    ).read(appSheetOpenProvider.notifier).state = true;
     setState(() => _open = true);
     final route = PageRouteBuilder<void>(
       opaque: false,
@@ -114,9 +115,9 @@ class AppSheetHostState extends State<AppSheetHost>
     );
     await nav.push(route);
     if (mounted) {
-      ProviderScope.containerOf(context)
-          .read(appSheetOpenProvider.notifier)
-          .state = false;
+      ProviderScope.containerOf(
+        context,
+      ).read(appSheetOpenProvider.notifier).state = false;
       setState(() => _open = false);
     }
   }
@@ -124,9 +125,9 @@ class AppSheetHostState extends State<AppSheetHost>
   Future<void> show(Widget sheet) async {
     final nav = _navigator.currentState;
     if (nav == null) return;
-    ProviderScope.containerOf(context)
-        .read(appSheetOpenProvider.notifier)
-        .state = true;
+    ProviderScope.containerOf(
+      context,
+    ).read(appSheetOpenProvider.notifier).state = true;
     setState(() => _open = true);
     final route = PageRouteBuilder<void>(
       opaque: false,
@@ -165,9 +166,9 @@ class AppSheetHostState extends State<AppSheetHost>
     );
     await nav.push(route);
     if (mounted) {
-      ProviderScope.containerOf(context)
-          .read(appSheetOpenProvider.notifier)
-          .state = false;
+      ProviderScope.containerOf(
+        context,
+      ).read(appSheetOpenProvider.notifier).state = false;
       setState(() => _open = false);
     }
   }
@@ -186,12 +187,12 @@ class AppSheetHostState extends State<AppSheetHost>
         child: IgnorePointer(
           ignoring: !_open,
           child: Navigator(
-        key: _navigator,
-        onGenerateRoute: (_) => PageRouteBuilder<void>(
-          opaque: false,
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const SizedBox.shrink(),
-          ),
+            key: _navigator,
+            onGenerateRoute: (_) => PageRouteBuilder<void>(
+              opaque: false,
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  const SizedBox.shrink(),
+            ),
           ),
         ),
       ),
@@ -199,147 +200,201 @@ class AppSheetHostState extends State<AppSheetHost>
   }
 }
 
-class _AppSheetBody extends StatelessWidget {
+class _AppSheetBody extends StatefulWidget {
   const _AppSheetBody({
     required this.title,
     required this.full,
+    required this.showCancel,
     required this.heightFactor,
+    required this.fullHeightFactor,
     required this.child,
   });
 
   final String title;
   final bool full;
+  final bool showCancel;
   final double heightFactor;
+  final double fullHeightFactor;
   final Widget child;
+
+  @override
+  State<_AppSheetBody> createState() => _AppSheetBodyState();
+}
+
+class _AppSheetBodyState extends State<_AppSheetBody> {
+  double _dragY = 0;
 
   @override
   Widget build(BuildContext context) {
     final panelWidth = math.min(620.0, context.screenWidth);
     final radius = BorderRadius.vertical(top: Radius.circular(context.r(22)));
-    Widget panel(Widget body) {
-      return ClipRRect(
-        borderRadius: radius,
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF1D1613), Color(0xFF0F0B09)],
-            ),
-            border: Border(top: BorderSide(color: Color(0x1FFFFFFF), width: 0.5)),
+    final panelHeight = widget.full
+        ? context.screenHeight * widget.fullHeightFactor
+        : context.screenHeight * widget.heightFactor;
+
+    final panel = ClipRRect(
+      borderRadius: radius,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF1D1613), Color(0xFF0F0B09)],
           ),
-          child: body,
+          border: Border(top: BorderSide(color: Color(0x1FFFFFFF), width: 0.5)),
         ),
-      );
-    }
-
-    final grabber = Container(
-      width: context.r(36),
-      height: context.r(4),
-      decoration: BoxDecoration(
-        color: const Color(0x3BFFFFFF),
-        borderRadius: BorderRadius.circular(context.r(2)),
-      ),
-    );
-
-    if (full) {
-      return Align(
-        alignment: Alignment.bottomCenter,
-        child: SizedBox(
-          width: panelWidth,
-          height: context.screenHeight * 0.92,
-          child: panel(
-            Column(
-              children: [
-                SizedBox(height: context.r(16)),
-                grabber,
-                SizedBox(
-                  width: double.infinity,
-                  height: context.r(34),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Text(
-                        title,
-                        style: AppTextStyles.caption(context).copyWith(
-                          fontSize: context.sp(9.5),
-                          letterSpacing: 1.6,
-                          color: AppColors.inkFaint,
-                        ),
-                      ),
-                      Positioned(
-                        right: context.r(14),
-                        child: GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
-                          child: Text(
-                            '取消',
-                            style: AppTextStyles.caption(context).copyWith(
-                              fontSize: context.sp(8.5),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      context.r(14),
-                      0,
-                      context.r(14),
-                      context.r(16),
-                    ),
-                    child: child,
-                  ),
-                ),
-              ],
+        child: Column(
+          mainAxisSize: widget.full ? MainAxisSize.max : MainAxisSize.min,
+          children: [
+            _Grabber(onDragUpdate: _onDragUpdate, onDragEnd: _onDragEnd),
+            _Header(
+              title: widget.title,
+              showCancel: widget.showCancel,
+              onClose: _close,
+              onDragUpdate: _onDragUpdate,
+              onDragEnd: _onDragEnd,
             ),
-          ),
-        ),
-      );
-    }
-
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: panelWidth,
-          maxHeight: context.screenHeight * heightFactor,
-        ),
-        child: panel(
-          SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(height: context.r(16)),
-                grabber,
-                SizedBox(
-                  width: double.infinity,
-                  height: context.r(34),
-                  child: Center(
-                    child: Text(
-                      title,
-                      style: AppTextStyles.caption(context).copyWith(
-                        fontSize: context.sp(9.5),
-                        letterSpacing: 1.6,
-                        color: AppColors.inkFaint,
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
+            if (widget.full)
+              Expanded(
+                child: Padding(
                   padding: EdgeInsets.fromLTRB(
                     context.r(14),
                     0,
                     context.r(14),
                     context.r(16),
                   ),
-                  child: child,
+                  child: widget.child,
                 ),
-              ],
+              )
+            else
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    context.r(14),
+                    0,
+                    context.r(14),
+                    context.r(16),
+                  ),
+                  child: widget.child,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Transform.translate(
+        offset: Offset(0, _dragY),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: panelWidth,
+            maxHeight: panelHeight,
+          ),
+          child: widget.full
+              ? SizedBox(height: panelHeight, child: panel)
+              : panel,
+        ),
+      ),
+    );
+  }
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    setState(() => _dragY = (_dragY + details.delta.dy).clamp(0.0, 220.0));
+  }
+
+  void _onDragEnd(DragEndDetails details) {
+    if (_dragY > 90 || details.velocity.pixelsPerSecond.dy > 600) {
+      _close();
+    } else {
+      setState(() => _dragY = 0);
+    }
+  }
+
+  void _close() {
+    Navigator.of(context).pop();
+  }
+}
+
+class _Grabber extends StatelessWidget {
+  const _Grabber({required this.onDragUpdate, required this.onDragEnd});
+
+  final ValueChanged<DragUpdateDetails> onDragUpdate;
+  final ValueChanged<DragEndDetails> onDragEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onVerticalDragUpdate: onDragUpdate,
+      onVerticalDragEnd: onDragEnd,
+      child: SizedBox(
+        height: context.r(20),
+        child: Center(
+          child: Container(
+            width: context.r(36),
+            height: context.r(4),
+            decoration: BoxDecoration(
+              color: const Color(0x3BFFFFFF),
+              borderRadius: BorderRadius.circular(context.r(2)),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.title,
+    required this.showCancel,
+    required this.onClose,
+    required this.onDragUpdate,
+    required this.onDragEnd,
+  });
+
+  final String title;
+  final bool showCancel;
+  final VoidCallback onClose;
+  final ValueChanged<DragUpdateDetails> onDragUpdate;
+  final ValueChanged<DragEndDetails> onDragEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onVerticalDragUpdate: onDragUpdate,
+      onVerticalDragEnd: onDragEnd,
+      child: SizedBox(
+        width: double.infinity,
+        height: context.r(34),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Text(
+              title,
+              style: AppTextStyles.caption(context).copyWith(
+                fontSize: context.sp(9.5),
+                letterSpacing: 1.6,
+                color: AppColors.inkFaint,
+              ),
+            ),
+            if (showCancel)
+              Positioned(
+                right: context.r(14),
+                child: GestureDetector(
+                  onTap: onClose,
+                  child: Text(
+                    '取消',
+                    style: AppTextStyles.caption(
+                      context,
+                    ).copyWith(fontSize: context.sp(8.5)),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

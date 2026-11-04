@@ -7,6 +7,7 @@ import '../../../shared/widgets/app_icon_button.dart';
 import '../../../shared/widgets/app_icon.dart';
 import '../../../shared/widgets/fade_mask.dart';
 import '../../../shared/widgets/phone_page.dart';
+import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/screen_header.dart';
 import '../data/demo_diary.dart';
 import '../domain/entities/diary_entry.dart';
@@ -64,10 +65,10 @@ class _DiaryViewState extends State<DiaryView> {
   }
 
   void _showCalendar(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _DiaryCalendarSheet(
+    showAppSheet(
+      context,
+      title: '跳到某一天',
+      child: _DiaryCalendarSheet(
         entries: demoDiary,
         onPick: (index) {
           if (!mounted) return;

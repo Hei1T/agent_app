@@ -5,17 +5,23 @@ import '../../../../core/theme/app_colors.dart';
 /// 动态配图：后端给 http(s) URL，设计稿/本地数据给 asset 路径。
 /// 加载失败时退回一块中性底色，避免整行布局塌掉。
 class MomentPhoto extends StatelessWidget {
-  const MomentPhoto({super.key, required this.source, this.cacheWidth});
+  const MomentPhoto({
+    super.key,
+    required this.source,
+    this.cacheWidth,
+    this.fit = BoxFit.cover,
+  });
 
   final String source;
   final int? cacheWidth;
+  final BoxFit fit;
 
   @override
   Widget build(BuildContext context) {
     if (source.startsWith('http')) {
       return Image.network(
         source,
-        fit: BoxFit.cover,
+        fit: fit,
         cacheWidth: cacheWidth,
         errorBuilder: (context, error, stackTrace) => const _PhotoFallback(),
         loadingBuilder: (context, child, progress) =>
@@ -24,7 +30,7 @@ class MomentPhoto extends StatelessWidget {
     }
     return Image.asset(
       source,
-      fit: BoxFit.cover,
+      fit: fit,
       cacheWidth: cacheWidth,
       errorBuilder: (context, error, stackTrace) => const _PhotoFallback(),
     );

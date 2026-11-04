@@ -10,6 +10,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../shared/models/companion.dart';
 import '../../../shared/widgets/fade_mask.dart';
 import '../../../shared/widgets/phone_page.dart';
+import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/screen_header.dart';
 import '../domain/entities/today_entities.dart';
 import 'widgets/now_card.dart';
@@ -44,11 +45,10 @@ class TodayView extends ConsumerWidget {
   }
 
   void _showNow(BuildContext context, LifeSnapshot life) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => _NowSheet(life: life),
+    showAppSheet(
+      context,
+      title: '他此刻',
+      child: _NowSheet(life: life),
     );
   }
 }
