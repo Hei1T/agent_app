@@ -40,3 +40,7 @@ flutter run --dart-define=API_BASE_URL=http://<电脑局域网IP>:3000/api/v1
 - 日记页仍使用 demo 数据
 - 积分余额尚未在界面展示
 - 没有聊天历史加载（core history API 未代理）
+
+## 数据契约
+
+App 与 business-api 的 v1 字段契约见 [API_CONTRACT_V1.md](API_CONTRACT_V1.md)。当前 App 仍是过渡接入：`/core/life` 和裸 SSE 先兼容，后续后端 mapper 切换为 `/companion/state` 和 JSON SSE。
