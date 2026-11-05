@@ -28,11 +28,23 @@ jobs:
 
       - name: CocoaPods
         id: pods
-        continue-on-error: true
+        shell: bash
         run: |
+          set +e
+          pod --version > pod-version.log 2>&1
           cd ios
-          set -o pipefail
-          pod install 2>&1 | tee ../pod-install.log
+          pod install > ../pod-install.log 2>&1
+          code=$?
+          cd ..
+          cat pod-version.log
+          cat pod-install.log
+          if [ $code -ne 0 ]; then
+            echo "::error::pod install failed with exit code $code"
+            tail -80 pod-install.log | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            exit $code
+          fi
 
       - name: CocoaPods diagnostics
         if: always()
@@ -45,10 +57,6 @@ jobs:
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           fi
-
-      - name: Fail if pods failed
-        if: steps.pods.outcome == 'failure'
-        run: exit 1
 
       - name: Build unsigned iOS app
         run: |
