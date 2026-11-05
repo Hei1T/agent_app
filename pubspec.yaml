@@ -115,3 +115,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Pin the iOS video plugin to the version that builds with the CI Xcode.
+dependency_overrides:
+  video_player_avfoundation: 2.12.1
