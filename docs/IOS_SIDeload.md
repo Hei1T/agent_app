@@ -32,7 +32,7 @@
 
 把：
 
-    API_BASE_URL: http://192.168.1.100:3000/api/v1
+    API_BASE_URL: http://192.168.1.2:3000/api/v1
 
 改成你的实际 IP。
 

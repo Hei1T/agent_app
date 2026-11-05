@@ -5,7 +5,7 @@ on:
 
 env:
   # 改成 Windows 的局域网 IP；iPhone 和 Windows 必须同一 Wi-Fi
-  API_BASE_URL: http://192.168.1.100:3000/api/v1
+  API_BASE_URL: http://192.168.1.2:3000/api/v1
 
 jobs:
   build-ios:
