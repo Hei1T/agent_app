@@ -99,6 +99,7 @@ class AppSheetHostState extends State<AppSheetHost>
   void _end() {
     if (_depth > 0) _depth -= 1;
     if (_depth == 0) {
+      _navigator.currentState?.popUntil((route) => route.isFirst);
       ProviderScope.containerOf(
         context,
       ).read(appSheetOpenProvider.notifier).state = false;

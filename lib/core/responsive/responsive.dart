@@ -19,15 +19,14 @@ extension ResponsiveX on BuildContext {
 
   double r(double base) => base * scale;
 
-  /// 移动端最小可读字号。设计稿里的 7.5/9/10.5 在真机上过小，
-  /// 统一抬到 11pt；普通正文再额外加 1pt，标题只微调。
+  /// 移动端可读字号。设计稿 7.5/9/10.5 在真机上过小，
+  /// 手机统一放大 18% 并保证至少 12pt；大标题只微调。
   double sp(double base) {
     final scaled = base * scale;
-    // 平板也保证最小可读字号；手机上再把正文/说明整体放大一档。
-    if (scaled < 10.5) return 10.5;
-    if (!isPhone) return scaled;
-    if (base < 14) return scaled + 1;
-    return scaled + 0.5;
+    if (base >= 20) return scaled + 0.5;
+    if (!isPhone) return scaled < 10.5 ? 10.5 : scaled;
+    final boosted = scaled * 1.18 + 0.8;
+    return boosted < 12 ? 12 : boosted;
   }
 
   double v(double fraction) => screenHeight * fraction;
