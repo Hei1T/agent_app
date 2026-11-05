@@ -2,6 +2,8 @@ name: iOS unsigned build
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
 
 env:
   # 改成 Windows 的局域网 IP；iPhone 和 Windows 必须同一 Wi-Fi
