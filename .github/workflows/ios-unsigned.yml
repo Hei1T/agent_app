@@ -27,9 +27,28 @@ jobs:
         run: flutter pub get
 
       - name: CocoaPods
+        id: pods
+        continue-on-error: true
         run: |
           cd ios
-          pod install
+          set -o pipefail
+          pod install 2>&1 | tee ../pod-install.log
+
+      - name: CocoaPods diagnostics
+        if: always()
+        run: |
+          if [ -f pod-install.log ]; then
+            {
+              echo '## CocoaPods log'
+              echo '```'
+              tail -200 pod-install.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Fail if pods failed
+        if: steps.pods.outcome == 'failure'
+        run: exit 1
 
       - name: Build unsigned iOS app
         run: |
