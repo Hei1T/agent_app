@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/auth_controller.dart';
+import '../notifications/notification_service.dart';
 import '../providers/app_providers.dart';
 import 'realtime_service.dart';
 
@@ -77,6 +78,9 @@ class _RealtimeBridgeState extends ConsumerState<RealtimeBridge> {
     }
     if (text.trim().isEmpty) return;
     ref.read(proactiveNoticeProvider.notifier).show(text);
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      unawaited(NotificationService.showProactive(text));
+    }
   }
 
   @override

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/api_client.dart';
+import '../notifications/notification_service.dart';
 import '../contract/companion_state.dart';
 import '../contract/diary.dart';
 import '../contract/moment.dart';
@@ -53,3 +54,8 @@ final proactiveNoticeProvider =
     StateNotifierProvider<ProactiveNoticeController, ProactiveNoticeData?>(
       (ref) => ProactiveNoticeController(),
     );
+
+/// 系统通知点按后，App 跳到对话。
+final notificationTapProvider = StreamProvider<void>(
+  (ref) => NotificationService.taps,
+);

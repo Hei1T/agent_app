@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/providers/app_providers.dart';
 import 'core/realtime/realtime_bridge.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -14,6 +15,9 @@ class BenbenApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    ref.listen<AsyncValue<void>>(notificationTapProvider, (previous, next) {
+      if (next.hasValue) router.go('/chat');
+    });
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
