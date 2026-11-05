@@ -40,6 +40,11 @@ Future<void> showAppSheet(
 
 final appSheetOpenProvider = StateProvider<bool>((ref) => false);
 
+Future<void> closeAppSheet() async {
+  final host = AppSheetHost.hostKey.currentState;
+  if (host != null) await host.close();
+}
+
 Future<void> showPopup(
   BuildContext context,
   Widget child, {
@@ -105,6 +110,10 @@ class AppSheetHostState extends State<AppSheetHost>
       ).read(appSheetOpenProvider.notifier).state = false;
     }
     if (mounted) setState(() {});
+  }
+
+  Future<void> close() async {
+    await _navigator.currentState?.maybePop();
   }
 
   Future<void> showRaw(Widget child, {bool dismissible = false}) async {
@@ -386,9 +395,10 @@ class _Header extends StatelessWidget {
             Text(
               title,
               style: AppTextStyles.caption(context).copyWith(
-                fontSize: context.sp(9.5),
-                letterSpacing: 1.6,
-                color: AppColors.inkFaint,
+                fontSize: context.sp(14),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.6,
+                color: AppColors.inkSecondary,
               ),
             ),
             if (showCancel)
@@ -398,9 +408,10 @@ class _Header extends StatelessWidget {
                   onTap: onClose,
                   child: Text(
                     '取消',
-                    style: AppTextStyles.caption(
-                      context,
-                    ).copyWith(fontSize: context.sp(8.5)),
+                    style: AppTextStyles.caption(context).copyWith(
+                      fontSize: context.sp(12),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
@@ -480,6 +491,8 @@ class SheetActionsWidget extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.bodyStrong(context).copyWith(
+                          fontSize: context.sp(14.5),
+                          fontWeight: FontWeight.w500,
                           color: action.danger
                               ? AppColors.danger
                               : AppColors.ink,
@@ -490,7 +503,10 @@ class SheetActionsWidget extends StatelessWidget {
                           action.description!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.caption(context),
+                          style: AppTextStyles.caption(context).copyWith(
+                            fontSize: context.sp(11.5),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                     ],
                   ),

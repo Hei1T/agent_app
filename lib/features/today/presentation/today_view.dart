@@ -196,18 +196,34 @@ class _NowSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('他现在', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              '他现在',
+              style: AppTextStyles.title(
+                context,
+              ).copyWith(fontSize: context.sp(18), fontWeight: FontWeight.w600),
+            ),
             SizedBox(height: AppSpacing.sm(context)),
-            Text(where, style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              where,
+              style: AppTextStyles.headline(
+                context,
+              ).copyWith(fontSize: context.sp(26), fontWeight: FontWeight.w600),
+            ),
             SizedBox(height: AppSpacing.sm(context)),
             Text(
               '精力 $energy · 饱腹 $satiety · 心情 $mood',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: AppTextStyles.body(context).copyWith(
+                fontSize: context.sp(15),
+                fontWeight: FontWeight.w500,
+                color: AppColors.ink,
+              ),
             ),
             SizedBox(height: AppSpacing.sm(context)),
             Text(
               companion.condition.isEmpty ? '没有特别说明。' : companion.condition,
-              style: Theme.of(context).textTheme.bodySmall,
+              style: AppTextStyles.body(
+                context,
+              ).copyWith(fontSize: context.sp(14), fontWeight: FontWeight.w400),
             ),
           ],
         ),

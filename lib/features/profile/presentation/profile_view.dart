@@ -55,7 +55,7 @@ class ProfileView extends ConsumerWidget {
             icon: AppIconName.book,
           ),
         ],
-        onPick: (_) => Navigator.of(context).pop(),
+        onPick: (_) => closeAppSheet(),
       ),
     );
   }

@@ -281,9 +281,9 @@ class _ChatViewState extends ConsumerState<ChatView> {
             danger: true,
           ),
         ],
-        onPick: (id) {
-          Navigator.of(context).pop();
-          if (id == 'clear') setState(_messages.clear);
+        onPick: (id) async {
+          await closeAppSheet();
+          if (id == 'clear' && mounted) setState(_messages.clear);
         },
       ),
     );

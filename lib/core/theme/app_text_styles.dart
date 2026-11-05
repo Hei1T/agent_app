@@ -7,22 +7,16 @@ import 'app_colors.dart';
 abstract final class AppTextStyles {
   static TextStyle micro(BuildContext c) => TextStyle(
     fontSize: c.sp(7.5),
-    fontWeight: FontWeight.w500,
     letterSpacing: 0.1,
     color: AppColors.inkFaint,
     height: 1.35,
   );
 
-  static TextStyle caption(BuildContext c) => TextStyle(
-    fontSize: c.sp(9),
-    fontWeight: FontWeight.w500,
-    color: AppColors.inkMuted,
-    height: 1.45,
-  );
+  static TextStyle caption(BuildContext c) =>
+      TextStyle(fontSize: c.sp(9), color: AppColors.inkMuted, height: 1.45);
 
   static TextStyle body(BuildContext c) => TextStyle(
     fontSize: c.sp(11),
-    fontWeight: FontWeight.w500,
     color: AppColors.inkSecondary,
     height: 1.65,
   );
@@ -66,7 +60,6 @@ abstract final class AppTextStyles {
 
   static TextStyle nav(BuildContext c) => TextStyle(
     fontSize: c.sp(10.5),
-    fontWeight: FontWeight.w500,
     letterSpacing: 0.8,
     color: AppColors.inkFaint,
   );

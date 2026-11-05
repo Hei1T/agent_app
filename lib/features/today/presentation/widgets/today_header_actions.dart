@@ -78,7 +78,7 @@ class TodayHeaderActions extends ConsumerWidget {
           ),
         ],
         onPick: (id) async {
-          Navigator.of(context).pop();
+          await closeAppSheet();
           // 等上一个 sheet 的退出动画结束再推下一个，避免两个 route 交叉。
           await Future<void>.delayed(const Duration(milliseconds: 220));
           if (!context.mounted) return;
@@ -132,7 +132,7 @@ class TodayHeaderActions extends ConsumerWidget {
             icon: AppIconName.calendar,
           ),
         ],
-        onPick: (_) => Navigator.of(context).pop(),
+        onPick: (_) => closeAppSheet(),
       ),
     );
   }

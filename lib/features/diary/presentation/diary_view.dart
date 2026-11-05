@@ -85,9 +85,9 @@ class _DiaryViewState extends ConsumerState<DiaryView> {
       title: '跳到某一天',
       child: _DiaryCalendarSheet(
         entries: entries,
-        onPick: (index) {
+        onPick: (index) async {
           if (!mounted) return;
-          Navigator.of(context).pop();
+          await closeAppSheet();
           Future<void>.delayed(const Duration(milliseconds: 220), () {
             if (!mounted) return;
             final target = _entryKeys[index].currentContext;

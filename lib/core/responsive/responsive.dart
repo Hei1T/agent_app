@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 extension ResponsiveX on BuildContext {
   double get screenWidth => MediaQuery.sizeOf(this).width;
   double get screenHeight => MediaQuery.sizeOf(this).height;
-  bool get isPhone => MediaQuery.sizeOf(this).shortestSide < 600;
+  bool get isPhone => screenWidth < 600;
   bool get isTablet => screenWidth >= 600 && screenWidth < 1000;
   bool get isPortrait => screenHeight >= screenWidth;
   bool get isWide => screenWidth >= 600;
@@ -19,15 +19,7 @@ extension ResponsiveX on BuildContext {
 
   double r(double base) => base * scale;
 
-  /// 移动端可读字号。设计稿 7.5/9/10.5 在真机上过小，
-  /// 手机统一放大 18% 并保证至少 12pt；大标题只微调。
-  double sp(double base) {
-    final scaled = base * scale;
-    if (base >= 20) return scaled + 0.5;
-    if (!isPhone) return scaled < 10.5 ? 10.5 : scaled;
-    final boosted = scaled * 1.18 + 0.8;
-    return boosted < 12 ? 12 : boosted;
-  }
+  double sp(double base) => base * scale;
 
   double v(double fraction) => screenHeight * fraction;
   double h(double fraction) => screenWidth * fraction;
