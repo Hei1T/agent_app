@@ -85,7 +85,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                       auth.error!,
                       style: const TextStyle(
                         color: Color(0xFFFF8A80),
-                        fontSize: 12,
+                        fontSize: 14,
                       ),
                     ),
                   ],
@@ -120,7 +120,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                   Text(
                     'API: ${ApiClient.baseUrl}',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white24, fontSize: 10),
+                    style: const TextStyle(color: Colors.white24, fontSize: 12),
                   ),
                 ],
               ),

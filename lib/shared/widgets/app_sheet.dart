@@ -64,7 +64,8 @@ class AppSheetHost extends StatefulWidget {
 class AppSheetHostState extends State<AppSheetHost>
     with WidgetsBindingObserver {
   final _navigator = GlobalKey<NavigatorState>();
-  bool _open = false;
+  int _depth = 0;
+  bool get _open => _depth > 0;
 
   @override
   void initState() {
@@ -87,13 +88,28 @@ class AppSheetHostState extends State<AppSheetHost>
     return super.didPopRoute();
   }
 
-  Future<void> showRaw(Widget child, {bool dismissible = false}) async {
-    final nav = _navigator.currentState;
-    if (nav == null) return;
+  void _begin() {
+    _depth += 1;
     ProviderScope.containerOf(
       context,
     ).read(appSheetOpenProvider.notifier).state = true;
-    setState(() => _open = true);
+    if (mounted) setState(() {});
+  }
+
+  void _end() {
+    if (_depth > 0) _depth -= 1;
+    if (_depth == 0) {
+      ProviderScope.containerOf(
+        context,
+      ).read(appSheetOpenProvider.notifier).state = false;
+    }
+    if (mounted) setState(() {});
+  }
+
+  Future<void> showRaw(Widget child, {bool dismissible = false}) async {
+    final nav = _navigator.currentState;
+    if (nav == null) return;
+    _begin();
     final route = PageRouteBuilder<void>(
       opaque: false,
       barrierColor: const Color(0x8C000000),
@@ -113,22 +129,17 @@ class AppSheetHostState extends State<AppSheetHost>
         ],
       ),
     );
-    await nav.push(route);
-    if (mounted) {
-      ProviderScope.containerOf(
-        context,
-      ).read(appSheetOpenProvider.notifier).state = false;
-      setState(() => _open = false);
+    try {
+      await nav.push(route);
+    } finally {
+      _end();
     }
   }
 
   Future<void> show(Widget sheet) async {
     final nav = _navigator.currentState;
     if (nav == null) return;
-    ProviderScope.containerOf(
-      context,
-    ).read(appSheetOpenProvider.notifier).state = true;
-    setState(() => _open = true);
+    _begin();
     final route = PageRouteBuilder<void>(
       opaque: false,
       barrierColor: const Color(0x85000000),
@@ -164,12 +175,10 @@ class AppSheetHostState extends State<AppSheetHost>
         );
       },
     );
-    await nav.push(route);
-    if (mounted) {
-      ProviderScope.containerOf(
-        context,
-      ).read(appSheetOpenProvider.notifier).state = false;
-      setState(() => _open = false);
+    try {
+      await nav.push(route);
+    } finally {
+      _end();
     }
   }
 
