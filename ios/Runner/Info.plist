@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Benben App</string>
+	<string>笨笨</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -24,6 +24,23 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>连接你电脑上的笨笨服务，同步他的生活和对话。</string>
+	<key>NSCameraUsageDescription</key>
+	<string>拍一张照片，发给笨笨。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>从相册选照片，发给笨笨。</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>保存笨笨发来的照片。</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>以后用来录语音消息。</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
