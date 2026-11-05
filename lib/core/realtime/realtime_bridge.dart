@@ -53,6 +53,7 @@ class _RealtimeBridgeState extends ConsumerState<RealtimeBridge> {
   void _onEvent(Map<String, dynamic> frame) {
     // 连接级错误帧不触发刷新。
     if (frame['error'] != null) return;
+    _handleProactive(frame);
     if (_debounce?.isActive ?? false) return;
     _debounce = Timer(const Duration(milliseconds: 600), () {
       if (!mounted) return;
@@ -60,6 +61,22 @@ class _RealtimeBridgeState extends ConsumerState<RealtimeBridge> {
       ref.invalidate(momentsProvider);
       ref.invalidate(diaryProvider);
     });
+  }
+
+  void _handleProactive(Map<String, dynamic> frame) {
+    final event = frame['event'];
+    if (event is! Map) return;
+    final turn = event['TurnOutput'];
+    if (turn is! Map) return;
+    final source = turn['source']?.toString();
+    final text = turn['text']?.toString() ?? '';
+    if (source != 'proactive' &&
+        source != 'life_sim' &&
+        source != 'attention') {
+      return;
+    }
+    if (text.trim().isEmpty) return;
+    ref.read(proactiveNoticeProvider.notifier).show(text);
   }
 
   @override

@@ -57,9 +57,10 @@ class _ChatViewState extends ConsumerState<ChatView> {
     try {
       final page = await ref.read(apiProvider).chatHistory();
       if (!mounted || page.items.isEmpty) return;
+      final existing = _messages.map((message) => message.text).toSet();
       setState(() {
         _messages.addAll(
-          page.items.map((item) {
+          page.items.where((item) => !existing.contains(item.text)).map((item) {
             final hash = item.text.hashCode;
             return ChatMessage(
               id: item.id.isEmpty ? 'history-$hash' : item.id,
@@ -91,6 +92,22 @@ class _ChatViewState extends ConsumerState<ChatView> {
     final pendingPhoto = ref.watch(pendingChatPhotoProvider);
     final pendingNote = ref.watch(pendingChatNoteProvider);
     final landscape = MediaQuery.sizeOf(context).width > 600;
+    ref.listen<ProactiveNoticeData?>(proactiveNoticeProvider, (previous, next) {
+      if (next == null) return;
+      if (_messages.any((message) => message.text == next.text)) return;
+      final stamp = next.at.microsecondsSinceEpoch;
+      setState(() {
+        _messages.add(
+          ChatMessage(
+            id: 'proactive-$stamp',
+            text: next.text,
+            fromCompanion: true,
+            read: true,
+          ),
+        );
+      });
+      _scrollToEnd();
+    });
     ref.listen<String?>(chatOutboxProvider, (previous, next) {
       if (next == null) return;
       ref.read(chatOutboxProvider.notifier).state = null;

@@ -29,3 +29,27 @@ final creditsProvider = FutureProvider.autoDispose<CreditBalance>(
 
 /// 测试可覆盖为 false，避免 widget test 建立真实 WS。
 final realtimeEnabledProvider = Provider<bool>((ref) => true);
+
+class ProactiveNoticeData {
+  const ProactiveNoticeData({required this.text, required this.at});
+
+  final String text;
+  final DateTime at;
+}
+
+class ProactiveNoticeController extends StateNotifier<ProactiveNoticeData?> {
+  ProactiveNoticeController() : super(null);
+
+  void show(String text) {
+    final value = text.trim();
+    if (value.isEmpty) return;
+    state = ProactiveNoticeData(text: value, at: DateTime.now());
+  }
+
+  void dismiss() => state = null;
+}
+
+final proactiveNoticeProvider =
+    StateNotifierProvider<ProactiveNoticeController, ProactiveNoticeData?>(
+      (ref) => ProactiveNoticeController(),
+    );

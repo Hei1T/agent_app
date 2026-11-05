@@ -1,29 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/providers/app_providers.dart';
 import '../../core/responsive/responsive.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import 'app_icon.dart';
+import 'media_text.dart';
 
-/// 最高层主动消息：以 React ProactiveNotification 的结构和尺寸为准。
-class ProactiveNotice extends StatefulWidget {
+/// 顶层主动消息：core 的 TurnOutput(source=proactive/life_sim/attention)
+/// 经 WS 到达后显示；点击进入对话，关闭只清通知。
+class ProactiveNotice extends ConsumerWidget {
   const ProactiveNotice({super.key, this.onOpen});
 
   final VoidCallback? onOpen;
 
   @override
-  State<ProactiveNotice> createState() => _ProactiveNoticeState();
-}
-
-class _ProactiveNoticeState extends State<ProactiveNotice> {
-  // 设计稿默认不弹主动消息；避免首屏盖住 Header。
-  bool _visible = false;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_visible) return const SizedBox.shrink();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notice = ref.watch(proactiveNoticeProvider);
+    if (notice == null) return const SizedBox.shrink();
     final radius = BorderRadius.circular(context.r(20));
+    final open = onOpen ?? () => context.go('/chat');
     return Padding(
       padding: EdgeInsets.fromLTRB(
         context.r(9),
@@ -50,49 +48,56 @@ class _ProactiveNoticeState extends State<ProactiveNotice> {
               ),
             ],
           ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: context.r(-46),
-                right: context.r(-30),
-                child: Container(
-                  width: context.r(150),
-                  height: context.r(120),
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [Color(0x21FF9E6B), Color(0x00FF9E6B)],
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              ref.read(proactiveNoticeProvider.notifier).dismiss();
+              open();
+            },
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                context.r(15),
+                context.r(14),
+                context.r(15),
+                context.r(13),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Avatar(),
+                  SizedBox(width: context.r(11)),
+                  Expanded(
+                    child: _Main(
+                      text: notice.text,
+                      onReply: () {
+                        ref.read(proactiveNoticeProvider.notifier).dismiss();
+                        open();
+                      },
                     ),
                   ),
-                ),
-              ),
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: widget.onOpen ?? () => context.go('/chat'),
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    context.r(15),
-                    context.r(14),
-                    context.r(15),
-                    context.r(13),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _Avatar(),
-                      SizedBox(width: context.r(11)),
-                      Expanded(
-                        child: _Main(
-                          onReply: widget.onOpen ?? () => context.go('/chat'),
+                  SizedBox(width: context.r(11)),
+                  GestureDetector(
+                    onTap: () =>
+                        ref.read(proactiveNoticeProvider.notifier).dismiss(),
+                    child: Container(
+                      width: context.r(24),
+                      height: context.r(24),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0x12FFFFFF),
+                      ),
+                      child: Center(
+                        child: AppIcon(
+                          AppIconName.close,
+                          size: context.r(10),
+                          color: const Color(0x85F7F2EB),
                         ),
                       ),
-                      SizedBox(width: context.r(11)),
-                      _Close(onTap: () => setState(() => _visible = false)),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -106,46 +111,29 @@ class _Avatar extends StatelessWidget {
     return SizedBox(
       width: context.r(42),
       height: context.r(42),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0x21FF9E6B),
-              border: Border.all(color: const Color(0x85FF9E6B)),
-            ),
-            child: Center(
-              child: Text(
-                '笨',
-                style: AppTextStyles.bodyStrong(
-                  context,
-                ).copyWith(color: AppColors.tint, fontSize: context.sp(14)),
-              ),
-            ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0x21FF9E6B),
+          border: Border.all(color: const Color(0x85FF9E6B)),
+        ),
+        child: Center(
+          child: Text(
+            '笨',
+            style: AppTextStyles.bodyStrong(
+              context,
+            ).copyWith(color: AppColors.tint, fontSize: context.sp(14)),
           ),
-          Positioned(
-            right: context.r(1),
-            bottom: context.r(3),
-            child: Container(
-              width: context.r(8),
-              height: context.r(8),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF34C759),
-                border: Border.all(color: const Color(0xFF221711), width: 2),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
 class _Main extends StatelessWidget {
-  const _Main({required this.onReply});
+  const _Main({required this.text, required this.onReply});
 
+  final String text;
   final VoidCallback onReply;
 
   @override
@@ -176,10 +164,10 @@ class _Main extends StatelessWidget {
           ],
         ),
         SizedBox(height: context.r(6)),
-        Text(
-          '今天有点不舒服，店里刚进的书还没理完。要不我撑到关门？',
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+        MediaRichText(
+          text: text,
+          maxLines: 3,
+          maxMediaHeight: 140,
           style: AppTextStyles.body(context).copyWith(
             fontSize: context.sp(10.5),
             height: 1.55,
@@ -198,7 +186,7 @@ class _Main extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '他在等你说句话',
+                  '他在等你回一句',
                   style: AppTextStyles.micro(
                     context,
                   ).copyWith(fontSize: context.sp(7.5), letterSpacing: 0.3),
@@ -264,34 +252,6 @@ class _Reply extends StatelessWidget {
             fontWeight: FontWeight.w600,
             letterSpacing: 0.3,
             color: AppColors.tint,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Close extends StatelessWidget {
-  const _Close({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: context.r(24),
-        height: context.r(24),
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: Color(0x12FFFFFF),
-        ),
-        child: Center(
-          child: AppIcon(
-            AppIconName.close,
-            size: context.r(10),
-            color: const Color(0x85F7F2EB),
           ),
         ),
       ),
