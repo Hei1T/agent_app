@@ -44,7 +44,10 @@ class ApiClient {
           baseUrl: ApiEndpoints.baseUrl,
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 120),
-          headers: const {'X-Contract-Version': '1'},
+          headers: const {
+            'X-Contract-Version': '1',
+            'ngrok-skip-browser-warning': 'true',
+          },
         ),
       ) {
     _dio.interceptors.add(
@@ -83,7 +86,10 @@ class ApiClient {
   Map<String, String>? get imageHeaders {
     final value = token;
     if (value == null || value.isEmpty) return null;
-    return {'Authorization': 'Bearer $value'};
+    return {
+      'Authorization': 'Bearer $value',
+      'ngrok-skip-browser-warning': 'true',
+    };
   }
 
   Map<String, dynamic> _data(Response<dynamic> response) {
