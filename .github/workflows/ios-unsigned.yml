@@ -1,5 +1,8 @@
 name: iOS unsigned build
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   push:
@@ -50,8 +53,17 @@ jobs:
           zip -qry Runner-unsigned.ipa Payload
           ls -lh Runner-unsigned.ipa
 
-      - name: Upload IPA
+      - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: Runner-unsigned
           path: Runner-unsigned.ipa
+
+      - name: Publish public IPA release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ios-unsigned-latest
+          name: iOS unsigned latest
+          prerelease: true
+          overwrite_files: true
+          files: Runner-unsigned.ipa
