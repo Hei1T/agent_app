@@ -19,6 +19,7 @@ import '../data/profile_mapper.dart';
 import '../domain/entities/profile_data.dart';
 import 'widgets/profile_hero.dart';
 import 'widgets/profile_section.dart';
+import '../../moments/presentation/widgets/moment_photo.dart';
 
 class ProfileView extends ConsumerWidget {
   const ProfileView({super.key});
@@ -91,15 +92,20 @@ class ProfileView extends ConsumerWidget {
   }
 }
 
-class _ProfileBody extends StatelessWidget {
+class _ProfileBody extends ConsumerWidget {
   const _ProfileBody({required this.state, required this.companion});
 
   final CompanionState state;
   final Companion companion;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final profile = profileOf(state);
+    final moments = ref.watch(momentsProvider).valueOrNull;
+    final photos = <String>[
+      for (final moment in moments?.items ?? const [])
+        for (final photo in moment.photos) photo.url,
+    ].take(4).toList();
     return FadeMask(
       child: ListView(
         key: const Key('profile_feed'),
@@ -122,13 +128,14 @@ class _ProfileBody extends StatelessWidget {
             things: profile.things,
           ),
           SizedBox(height: AppSpacing.md(context)),
-          // TODO(app-contract): 朋友圈 / 日记 media 接口接入后换成后端照片。
-          const ProfileSection(
-            key: Key('profile_section_photos'),
-            title: '最近拍下的',
-            child: _PhotoRow(),
-          ),
-          SizedBox(height: AppSpacing.md(context)),
+          if (photos.isNotEmpty) ...[
+            ProfileSection(
+              key: const Key('profile_section_photos'),
+              title: '最近拍下的',
+              child: _PhotoRow(photos: photos),
+            ),
+            SizedBox(height: AppSpacing.md(context)),
+          ],
           ProfileSection(
             key: const Key('profile_section_people'),
             title: '他记得的人',
@@ -185,14 +192,9 @@ class _ErrorState extends StatelessWidget {
 }
 
 class _PhotoRow extends StatelessWidget {
-  const _PhotoRow();
+  const _PhotoRow({required this.photos});
 
-  static const _photos = [
-    'assets/media/book1.jpg',
-    'assets/media/book2.jpg',
-    'assets/media/book3.jpg',
-    'assets/media/book1.jpg',
-  ];
+  final List<String> photos;
 
   @override
   Widget build(BuildContext context) {
@@ -200,15 +202,15 @@ class _PhotoRow extends StatelessWidget {
       height: context.r(64),
       child: Row(
         children: [
-          for (var i = 0; i < _photos.length; i++) ...[
+          for (var i = 0; i < photos.length; i++) ...[
             if (i > 0) SizedBox(width: context.r(6)),
             Expanded(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.sm(context)),
                 child: Opacity(
                   opacity: 0.92,
-                  child: Image.asset(
-                    _photos[i],
+                  child: MomentPhotoView(
+                    source: photos[i],
                     fit: BoxFit.cover,
                     cacheWidth: 400,
                   ),

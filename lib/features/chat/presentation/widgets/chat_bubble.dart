@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/chat_message.dart';
+import 'chat_message_content.dart';
 
 class ChatBubble extends StatelessWidget {
   const ChatBubble({
@@ -76,10 +77,9 @@ class ChatBubble extends StatelessWidget {
                       ? CrossAxisAlignment.start
                       : CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      message.text,
+                    ChatMessageContent(
+                      text: message.text,
                       maxLines: 6,
-                      overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.body(context).copyWith(
                         fontSize: context.sp(13.5),
                         height: 1.6,
