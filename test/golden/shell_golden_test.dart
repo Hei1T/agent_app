@@ -11,7 +11,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await pumpBenben(tester);
-    await expectLater(find.byType(BenbenApp), matchesGoldenFile('goldens/phone_shell.png'));
+    await expectLater(
+      find.byType(BenbenApp),
+      matchesGoldenFile('goldens/phone_shell.png'),
+    );
   });
 
   testWidgets('tablet shell golden', (tester) async {
@@ -20,6 +23,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await pumpBenben(tester);
-    await expectLater(find.byType(BenbenApp), matchesGoldenFile('goldens/tablet_shell.png'));
+    await expectLater(
+      find.byType(BenbenApp),
+      matchesGoldenFile('goldens/tablet_shell.png'),
+    );
   });
 }

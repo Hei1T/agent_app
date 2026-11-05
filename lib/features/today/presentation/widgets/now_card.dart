@@ -34,7 +34,7 @@ class NowCard extends StatelessWidget {
             children: [
               _TopRow(companion: companion),
               _Stats(companion: companion),
-              const _Quote(),
+              _Quote(text: companion.quote),
             ],
           ),
         ),
@@ -137,7 +137,7 @@ class _TitleBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '他此刻 · 第 ${companion.day} 天',
+          _titleLine(companion),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppTextStyles.caption(context).copyWith(
@@ -150,7 +150,7 @@ class _TitleBlock extends StatelessWidget {
         Padding(
           padding: EdgeInsets.only(top: context.r(1)),
           child: Text(
-            '在${companion.place} · ${companion.action}',
+            _whereLine(companion),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.title(
@@ -173,6 +173,19 @@ class _TitleBlock extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _titleLine(Companion companion) {
+    final day = companion.day;
+    return day == null ? '他此刻 · 今天' : '他此刻 · 第 $day 天';
+  }
+
+  String _whereLine(Companion companion) {
+    final place = companion.place;
+    final action = companion.action;
+    if (place.isEmpty) return action;
+    if (action.isEmpty) return '在$place';
+    return '在$place · $action';
   }
 
   String _meta(Companion companion) {
@@ -200,15 +213,15 @@ class _Stats extends StatelessWidget {
           Expanded(
             child: _Stat(
               label: '体力',
-              value: '${companion.energy}%',
+              value: _percentText(companion.energy),
               divider: false,
             ),
           ),
           Expanded(
             child: _Stat(label: '心情', value: companion.mood),
           ),
-          const Expanded(
-            child: _Stat(label: '在店', value: '3 小时'),
+          Expanded(
+            child: _Stat(label: '饱腹', value: _percentText(companion.satiety)),
           ),
         ],
       ),
@@ -268,14 +281,17 @@ class _Stat extends StatelessWidget {
 }
 
 class _Quote extends StatelessWidget {
-  const _Quote();
+  const _Quote({required this.text});
+
+  final String text;
 
   @override
   Widget build(BuildContext context) {
+    if (text.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: EdgeInsets.only(top: context.r(12)),
       child: Text(
-        '“把晒了一下午的旧书一本本收回来，码回后院。”',
+        '“$text”',
         key: const Key('now_quote'),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
@@ -288,3 +304,5 @@ class _Quote extends StatelessWidget {
     );
   }
 }
+
+String _percentText(int? value) => value == null ? '—' : '$value%';

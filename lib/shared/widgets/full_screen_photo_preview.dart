@@ -2,6 +2,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/providers/app_providers.dart';
 import '../../core/theme/app_colors.dart';
 import 'app_sheet.dart';
 
@@ -16,9 +19,19 @@ Future<void> showFullScreenPhotoPreview(
 }) {
   final host = AppSheetHost.hostKey.currentState;
   if (host != null) {
+    final api = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(apiProvider);
+    final resolved = api.resolveMediaUrl(source) ?? source;
+    final headers = api.imageHeaders;
     return showPopup(
       context,
-      _FullScreenPhotoPreview(source: source, heroTag: heroTag),
+      _FullScreenPhotoPreview(
+        source: resolved,
+        heroTag: heroTag,
+        headers: headers,
+      ),
     );
   }
   return showGeneralDialog<void>(
@@ -33,10 +46,15 @@ Future<void> showFullScreenPhotoPreview(
 }
 
 class _FullScreenPhotoPreview extends StatefulWidget {
-  const _FullScreenPhotoPreview({required this.source, this.heroTag});
+  const _FullScreenPhotoPreview({
+    required this.source,
+    this.heroTag,
+    this.headers,
+  });
 
   final String source;
   final String? heroTag;
+  final Map<String, String>? headers;
 
   @override
   State<_FullScreenPhotoPreview> createState() =>
@@ -114,6 +132,7 @@ class _FullScreenPhotoPreviewState extends State<_FullScreenPhotoPreview> {
       return Image.network(
         source,
         fit: BoxFit.contain,
+        headers: widget.headers,
         errorBuilder: (context, error, stackTrace) => const _Fallback(),
       );
     }

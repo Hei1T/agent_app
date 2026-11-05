@@ -1,117 +1,157 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/contract/diary.dart';
+import '../../../../core/contract/moment.dart';
+import '../../../../core/providers/app_providers.dart';
 import '../../../../core/responsive/responsive.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../diary/data/demo_diary.dart';
 import '../../../diary/presentation/widgets/diary_entry_card.dart';
-import '../../../moments/data/demo_moments.dart';
+import '../../../moments/presentation/moments_controller.dart';
 import '../../../moments/presentation/widgets/moment_card.dart';
-import '../../../profile/data/demo_profile.dart';
+import '../../../profile/data/profile_mapper.dart';
+import '../../../profile/domain/entities/profile_data.dart';
 import '../../../profile/presentation/widgets/profile_hero.dart';
 import '../../../profile/presentation/widgets/profile_section.dart';
+import '../../../today/data/companion_state_mapper.dart';
 
-class CinemaMomentsPanel extends StatefulWidget {
+class CinemaMomentsPanel extends ConsumerWidget {
   const CinemaMomentsPanel({super.key});
 
   @override
-  State<CinemaMomentsPanel> createState() => _CinemaMomentsPanelState();
-}
-
-class _CinemaMomentsPanelState extends State<CinemaMomentsPanel> {
-  final Set<String> _liked = {};
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(momentsProvider);
+    ref.watch(momentsControllerProvider);
+    final controller = ref.read(momentsControllerProvider.notifier);
     return _PanelScaffold(
-      title: '他的朋友圈 · 今天',
-      child: ListView.separated(
-        padding: EdgeInsets.zero,
-        itemCount: demoMoments.length,
-        separatorBuilder: (context, index) =>
-            SizedBox(height: AppSpacing.md(context)),
-        itemBuilder: (context, index) {
-          final item = demoMoments[index];
-          return MomentCard(
-            moment: item,
-            liked: _liked.contains(item.id),
-            onLike: () => setState(() {
-              if (!_liked.remove(item.id)) _liked.add(item.id);
-            }),
-            onTap: () {},
-          );
-        },
+      title: '他的朋友圈',
+      child: async.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => _PanelMessage(text: '朋友圈暂时连不上：$error'),
+        data: (page) => page.items.isEmpty
+            ? const _PanelMessage(text: '还没有动态')
+            : _MomentsList(moments: page.items, controller: controller),
       ),
     );
   }
 }
 
-class CinemaDiaryPanel extends StatelessWidget {
+class _MomentsList extends StatelessWidget {
+  const _MomentsList({required this.moments, required this.controller});
+
+  final List<Moment> moments;
+  final MomentsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: EdgeInsets.zero,
+      itemCount: moments.length,
+      separatorBuilder: (context, index) =>
+          SizedBox(height: AppSpacing.md(context)),
+      itemBuilder: (context, index) {
+        final item = moments[index];
+        return MomentCard(
+          moment: item,
+          liked: controller.isLiked(item),
+          likeCount: controller.likeCount(item),
+          comments: controller.commentsFor(item),
+          onLike: () => controller.toggleLike(item),
+          onTap: () {},
+        );
+      },
+    );
+  }
+}
+
+class CinemaDiaryPanel extends ConsumerWidget {
   const CinemaDiaryPanel({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(diaryProvider);
     return _PanelScaffold(
       title: '他的日记',
-      child: ListView.separated(
-        padding: EdgeInsets.zero,
-        itemCount: demoDiary.length,
-        separatorBuilder: (context, index) =>
-            SizedBox(height: AppSpacing.md(context)),
-        itemBuilder: (context, index) =>
-            DiaryEntryCard(entry: demoDiary[index]),
+      child: async.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => _PanelMessage(text: '日记暂时连不上：$error'),
+        data: (page) => page.items.isEmpty
+            ? const _PanelMessage(text: '他还没有写过日记。')
+            : _DiaryList(entries: page.items),
       ),
     );
   }
 }
 
-class CinemaProfilePanel extends StatelessWidget {
-  const CinemaProfilePanel({super.key});
+class _DiaryList extends StatelessWidget {
+  const _DiaryList({required this.entries});
+
+  final List<DiaryEntry> entries;
 
   @override
   Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: EdgeInsets.zero,
+      itemCount: entries.length,
+      separatorBuilder: (context, index) =>
+          SizedBox(height: AppSpacing.md(context)),
+      itemBuilder: (context, index) => DiaryEntryCard(entry: entries[index]),
+    );
+  }
+}
+
+class CinemaProfilePanel extends ConsumerWidget {
+  const CinemaProfilePanel({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(companionStateProvider);
     return _PanelScaffold(
       title: '他',
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 6,
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                const ProfileHero(companionName: '笨笨', day: 5),
-                SizedBox(height: AppSpacing.md(context)),
-                ProfileSection(
-                  title: '最近拍下的',
-                  meta: '全部 94 张',
-                  child: _PhotoRow(),
+      child: async.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => _PanelMessage(text: '暂时连不上他：$error'),
+        data: (state) {
+          final profile = profileOf(state);
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 6,
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    ProfileHero(companion: companionOf(state)),
+                    SizedBox(height: AppSpacing.md(context)),
+                    ProfileSection(title: '最近拍下的', child: const _PhotoRow()),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          SizedBox(width: AppSpacing.md(context)),
-          Expanded(
-            flex: 4,
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                ProfileSection(
-                  title: '他记得的人',
-                  meta: '4 个街坊',
-                  child: _People(people: demoProfile.people),
+              ),
+              SizedBox(width: AppSpacing.md(context)),
+              Expanded(
+                flex: 4,
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    ProfileSection(
+                      title: '他记得的人',
+                      meta: '${profile.people.length} 个街坊',
+                      child: _People(people: profile.people),
+                    ),
+                    SizedBox(height: AppSpacing.md(context)),
+                    ProfileSection(
+                      title: '他的家当',
+                      meta: '${profile.things.length} 件',
+                      child: _Things(things: profile.things),
+                    ),
+                  ],
                 ),
-                SizedBox(height: AppSpacing.md(context)),
-                ProfileSection(
-                  title: '他的家当',
-                  meta: '6 件',
-                  child: _Things(things: demoProfile.things),
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -145,7 +185,12 @@ class _PanelScaffold extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: AppTextStyles.label(context)),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.label(context),
+              ),
               SizedBox(height: AppSpacing.md(context)),
               Expanded(child: child),
             ],
@@ -156,9 +201,31 @@ class _PanelScaffold extends StatelessWidget {
   }
 }
 
-class _PhotoRow extends StatelessWidget {
+class _PanelMessage extends StatelessWidget {
+  const _PanelMessage({required this.text});
+
+  final String text;
+
   @override
   Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        maxLines: 4,
+        overflow: TextOverflow.ellipsis,
+        style: AppTextStyles.caption(context),
+      ),
+    );
+  }
+}
+
+class _PhotoRow extends StatelessWidget {
+  const _PhotoRow();
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO(app-contract): media 代理接入后换成后端照片。
     const photos = [
       'assets/media/book1.jpg',
       'assets/media/book2.jpg',
@@ -186,10 +253,13 @@ class _PhotoRow extends StatelessWidget {
 class _People extends StatelessWidget {
   const _People({required this.people});
 
-  final List<dynamic> people;
+  final List<Person> people;
 
   @override
   Widget build(BuildContext context) {
+    if (people.isEmpty) {
+      return Text('还没有记住的人。', style: AppTextStyles.caption(context));
+    }
     return Column(
       children: [
         for (final person in people)
@@ -201,10 +271,7 @@ class _People extends StatelessWidget {
                   child: SizedBox(
                     width: context.r(32),
                     height: context.r(32),
-                    child: Image.asset(
-                      person.photo as String,
-                      fit: BoxFit.cover,
-                    ),
+                    child: Image.asset(person.photo, fit: BoxFit.cover),
                   ),
                 ),
                 SizedBox(width: AppSpacing.sm(context)),
@@ -213,7 +280,7 @@ class _People extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        person.name as String,
+                        person.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.bodyStrong(context),
@@ -238,10 +305,13 @@ class _People extends StatelessWidget {
 class _Things extends StatelessWidget {
   const _Things({required this.things});
 
-  final List<dynamic> things;
+  final List<Thing> things;
 
   @override
   Widget build(BuildContext context) {
+    if (things.isEmpty) {
+      return Text('还没有记下的家当。', style: AppTextStyles.caption(context));
+    }
     return Column(
       children: [
         for (final thing in things)
@@ -260,13 +330,13 @@ class _Things extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        thing.name as String,
+                        thing.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.bodyStrong(context),
                       ),
                       Text(
-                        thing.detail as String,
+                        thing.detail,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.caption(context),

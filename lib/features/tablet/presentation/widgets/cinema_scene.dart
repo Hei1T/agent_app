@@ -87,16 +87,17 @@ class _Story extends StatelessWidget {
         SizedBox(height: AppSpacing.sm(context)),
         Text('15:32 · 今天第 4 件事', style: AppTextStyles.caption(context)),
         SizedBox(height: AppSpacing.md(context)),
-        _DayNav(dayLabel: dayLabel),
+        _DayNav(dayLabel: dayLabel, day: companion.day),
       ],
     );
   }
 }
 
 class _DayNav extends StatelessWidget {
-  const _DayNav({required this.dayLabel});
+  const _DayNav({required this.dayLabel, required this.day});
 
   final String dayLabel;
+  final int? day;
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +125,10 @@ class _DayNav extends StatelessWidget {
               child: Column(
                 children: [
                   Text(dayLabel, style: AppTextStyles.bodyStrong(context)),
-                  Text('第 5 / 5 天', style: AppTextStyles.micro(context)),
+                  Text(
+                    day == null ? '今天' : '第 $day 天',
+                    style: AppTextStyles.micro(context),
+                  ),
                 ],
               ),
             ),
@@ -161,7 +165,7 @@ class _Status extends StatelessWidget {
             Text('此刻', style: AppTextStyles.micro(context)),
             Text('第 3 小时', style: AppTextStyles.title(context)),
             SizedBox(height: AppSpacing.sm(context)),
-            _StatusRow(label: '体力', value: '${companion.energy}%'),
+            _StatusRow(label: '体力', value: _percentText(companion.energy)),
             _StatusRow(label: '心情', value: companion.mood),
             _StatusRow(label: '见过', value: '2 人'),
             SizedBox(height: AppSpacing.xs(context)),
@@ -254,3 +258,5 @@ class _TimeRuler extends StatelessWidget {
     );
   }
 }
+
+String _percentText(int? value) => value == null ? '—' : '$value%';

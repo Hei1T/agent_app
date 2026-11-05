@@ -1,87 +1,81 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/contract/moment.dart';
+import '../../../core/providers/app_providers.dart';
 import '../../../core/responsive/responsive.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../shared/widgets/app_icon.dart';
+import '../../../shared/widgets/app_icon_button.dart';
+import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/fade_mask.dart';
 import '../../../shared/widgets/phone_page.dart';
-import '../../../shared/widgets/screen_header.dart';
-import '../../../shared/widgets/app_icon_button.dart';
-import '../../../shared/widgets/app_icon.dart';
-import '../../../core/api/api_client.dart';
-import '../../../core/auth/auth_controller.dart';
-import '../data/demo_moments.dart';
-import 'moment_overlay_provider.dart';
 import '../../../shared/widgets/photo_overlay.dart';
-import '../../../shared/widgets/app_sheet.dart';
-import 'widgets/moment_detail_sheet.dart';
-import '../domain/entities/moment.dart';
+import '../../../shared/widgets/screen_header.dart';
+import 'moments_controller.dart';
 import 'widgets/moment_card.dart';
+import 'widgets/moment_detail_sheet.dart';
 
-class MomentsView extends ConsumerStatefulWidget {
+class MomentsView extends ConsumerWidget {
   const MomentsView({super.key});
 
   @override
-  ConsumerState<MomentsView> createState() => _MomentsViewState();
-}
-
-class _MomentsViewState extends ConsumerState<MomentsView> {
-  @override
-  Widget build(BuildContext context) {
-    final liked = ref.watch(likedMomentsProvider);
-    final comments = ref.watch(momentCommentsProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncPage = ref.watch(momentsProvider);
+    // 点赞 / 留言状态变化时重建列表。
+    ref.watch(momentsControllerProvider);
+    final state = ref.watch(companionStateProvider).valueOrNull;
+    final day = state?.companion.day;
     return PhonePage(
       key: const Key('moments_view'),
       header: ScreenHeader(
         title: '朋友圈',
-        subtitle: '他的生活 · 第 5 天',
+        subtitle: day == null ? '他的生活' : '他的生活 · 第 $day 天',
         actions: [
           AppIconButton(
             icon: AppIconName.camera,
-            onTap: () => _showCamera(context),
+            onTap: () => showPhotoPicker(context, withNote: true),
           ),
         ],
       ),
-      child: ref
-          .watch(feedProvider)
-          .when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => _ErrorState(message: error.toString()),
-            data: (remote) => _Feed(
-              moments: remote.isEmpty
-                  ? demoMoments
-                  : remote.map(_toMoment).toList(),
-              liked: liked,
-              comments: comments,
-              onToggleLike: _toggle,
-              onOpen: _open,
-            ),
-          ),
+      child: asyncPage.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => _ErrorState(
+          message: error.toString(),
+          onRetry: () => ref.invalidate(momentsProvider),
+        ),
+        data: (page) {
+          if (page.items.isEmpty) return const _EmptyState();
+          return _Feed(
+            moments: page.items,
+            controller: ref.read(momentsControllerProvider.notifier),
+            onLike: (moment) => _toggleLike(context, ref, moment),
+            onOpen: (moment) => _open(context, ref, moment),
+          );
+        },
+      ),
     );
   }
 
-  Moment _toMoment(RemoteMoment item) => Moment(
-    id: item.id,
-    author: item.author,
-    time: item.time,
-    place: item.place,
-    text: item.text,
-    photos: item.photos,
-    likes: const [],
-    comments: const [],
-  );
-
-  void _toggle(String id) {
-    ref.read(likedMomentsProvider.notifier).update((liked) {
-      final next = {...liked};
-      if (!next.remove(id)) next.add(id);
-      return next;
-    });
+  Future<void> _toggleLike(
+    BuildContext context,
+    WidgetRef ref,
+    Moment moment,
+  ) async {
+    final ok = await ref
+        .read(momentsControllerProvider.notifier)
+        .toggleLike(moment);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('点赞没同步上，已回滚。')));
+    }
   }
 
-  void _open(Moment moment) {
+  void _open(BuildContext context, WidgetRef ref, Moment moment) {
+    final controller = ref.read(momentsControllerProvider.notifier);
     showAppSheet(
       context,
       title: '动态',
@@ -90,31 +84,12 @@ class _MomentsViewState extends ConsumerState<MomentsView> {
       fullHeightFactor: 0.82,
       child: MomentDetailSheet(
         moment: moment,
-        liked: ref.read(likedMomentsProvider).contains(moment.id),
-        comments: ref.read(momentCommentsProvider)[moment.id],
-        onLike: () {
-          ref.read(likedMomentsProvider.notifier).update((liked) {
-            final next = {...liked};
-            if (!next.remove(moment.id)) next.add(moment.id);
-            return next;
-          });
-        },
-        onAddComment: (text) {
-          ref.read(momentCommentsProvider.notifier).update((value) {
-            final next = {...value};
-            next[moment.id] = [
-              ...?value[moment.id],
-              MomentComment(author: '你', text: text, time: '刚刚'),
-            ];
-            return next;
-          });
-        },
+        liked: controller.isLiked(moment),
+        comments: controller.commentsFor(moment),
+        onLike: () => controller.toggleLike(moment),
+        onAddComment: (text) => controller.addComment(moment, text),
       ),
     );
-  }
-
-  void _showCamera(BuildContext context) {
-    showPhotoPicker(context, withNote: true);
   }
 }
 
@@ -122,30 +97,18 @@ class _MomentsViewState extends ConsumerState<MomentsView> {
 class _Feed extends StatelessWidget {
   const _Feed({
     required this.moments,
-    required this.liked,
-    required this.comments,
-    required this.onToggleLike,
+    required this.controller,
+    required this.onLike,
     required this.onOpen,
   });
 
   final List<Moment> moments;
-  final Set<String> liked;
-  final Map<String, List<MomentComment>> comments;
-  final ValueChanged<String> onToggleLike;
+  final MomentsController controller;
+  final ValueChanged<Moment> onLike;
   final ValueChanged<Moment> onOpen;
 
   @override
   Widget build(BuildContext context) {
-    if (moments.isEmpty) {
-      return Center(
-        child: Text(
-          '还没有动态',
-          style: AppTextStyles.body(
-            context,
-          ).copyWith(fontSize: context.sp(12), color: AppColors.inkMuted),
-        ),
-      );
-    }
     return FadeMask(
       child: ListView.separated(
         key: const Key('moments_feed'),
@@ -162,10 +125,11 @@ class _Feed extends StatelessWidget {
           return MomentCard(
             key: ValueKey(item.id),
             moment: item,
-            liked: liked.contains(item.id),
-            comments: comments[item.id] ?? item.comments,
+            liked: controller.isLiked(item),
+            likeCount: controller.likeCount(item),
+            comments: controller.commentsFor(item),
             divider: index != moments.length - 1,
-            onLike: () => onToggleLike(item.id),
+            onLike: () => onLike(item),
             onTap: () => onOpen(item),
           );
         },
@@ -174,22 +138,53 @@ class _Feed extends StatelessWidget {
   }
 }
 
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        '还没有动态',
+        style: AppTextStyles.body(
+          context,
+        ).copyWith(fontSize: context.sp(12), color: AppColors.inkMuted),
+      ),
+    );
+  }
+}
+
 class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message});
+  const _ErrorState({required this.message, required this.onRetry});
 
   final String message;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: EdgeInsets.all(AppSpacing.lg(context)),
-        child: Text(
-          '朋友圈暂时连不上：$message',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.body(
-            context,
-          ).copyWith(fontSize: context.sp(12), color: AppColors.inkMuted),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '朋友圈暂时连不上',
+              style: AppTextStyles.body(
+                context,
+              ).copyWith(fontSize: context.sp(13), color: AppColors.ink),
+            ),
+            SizedBox(height: AppSpacing.sm(context)),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body(
+                context,
+              ).copyWith(fontSize: context.sp(12), color: AppColors.inkMuted),
+            ),
+            SizedBox(height: AppSpacing.md(context)),
+            FilledButton(onPressed: onRetry, child: const Text('重试')),
+          ],
         ),
       ),
     );

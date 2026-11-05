@@ -12,7 +12,8 @@ import '../../../../shared/widgets/app_icon.dart';
 import '../../../../shared/widgets/app_icon_button.dart';
 import '../../../../shared/widgets/app_sheet.dart';
 import '../../../../shared/widgets/photo_overlay.dart';
-import '../../data/demo_today.dart';
+import '../../../../core/providers/app_providers.dart';
+import '../../data/companion_state_mapper.dart';
 import '../../domain/entities/today_entities.dart';
 
 class TodayHeaderActions extends ConsumerWidget {
@@ -233,14 +234,14 @@ class _CameraSheetState extends State<_CameraSheet> {
   }
 }
 
-class _SearchSheet extends StatefulWidget {
+class _SearchSheet extends ConsumerStatefulWidget {
   const _SearchSheet();
 
   @override
-  State<_SearchSheet> createState() => _SearchSheetState();
+  ConsumerState<_SearchSheet> createState() => _SearchSheetState();
 }
 
-class _SearchSheetState extends State<_SearchSheet> {
+class _SearchSheetState extends ConsumerState<_SearchSheet> {
   final _controller = TextEditingController();
 
   @override
@@ -252,11 +253,11 @@ class _SearchSheetState extends State<_SearchSheet> {
   @override
   Widget build(BuildContext context) {
     final query = _controller.text.trim();
+    final state = ref.watch(companionStateProvider).valueOrNull;
+    final entries = state == null ? const <TimelineEntry>[] : timelineOf(state);
     final results = query.isEmpty
-        ? demoTodayTimeline.take(6).toList()
-        : demoTodayTimeline
-              .where((e) => (e.title + e.detail).contains(query))
-              .toList();
+        ? entries.take(6).toList()
+        : entries.where((e) => (e.title + e.detail).contains(query)).toList();
     return Column(
       children: [
         Padding(
@@ -345,19 +346,26 @@ class _SearchRow extends StatelessWidget {
   }
 }
 
-class _SettingsSheet extends StatefulWidget {
+class _SettingsSheet extends ConsumerStatefulWidget {
   const _SettingsSheet();
 
   @override
-  State<_SettingsSheet> createState() => _SettingsSheetState();
+  ConsumerState<_SettingsSheet> createState() => _SettingsSheetState();
 }
 
-class _SettingsSheetState extends State<_SettingsSheet> {
+class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
   bool notify = true;
   bool sound = false;
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(companionStateProvider).valueOrNull;
+    final companion = state == null ? null : companionOf(state);
+    final subtitle = [
+      '栖湾',
+      if (companion != null && companion.place.isNotEmpty) companion.place,
+      if (companion?.day != null) '第 ${companion!.day} 天',
+    ].join(' · ');
     return Padding(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.md(context),
@@ -379,10 +387,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('你的笨笨', style: AppTextStyles.bodyStrong(context)),
-                  Text(
-                    '栖湾 · 旧书店 · 第 5 天',
-                    style: AppTextStyles.caption(context),
-                  ),
+                  Text(subtitle, style: AppTextStyles.caption(context)),
                   Text('这里只有他，和你们正在过的日子。', style: AppTextStyles.micro(context)),
                 ],
               ),

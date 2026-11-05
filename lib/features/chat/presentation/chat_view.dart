@@ -15,9 +15,8 @@ import '../../../shared/widgets/app_icon.dart';
 import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/photo_overlay.dart';
 import '../../../core/network/api_exception.dart';
-import '../../../core/auth/auth_controller.dart';
+import '../../../core/providers/app_providers.dart';
 import '../domain/entities/chat_message.dart';
-import '../data/demo_chat.dart';
 import 'chat_outbox.dart';
 import 'widgets/chat_bubble.dart';
 import 'widgets/chat_composer.dart';
@@ -29,10 +28,19 @@ class ChatView extends ConsumerStatefulWidget {
   ConsumerState<ChatView> createState() => _ChatViewState();
 }
 
+String _statusLabel(String? status) => switch (status) {
+  'awake' => '醒着',
+  'asleep' => '睡着',
+  'transiting' => '在路上',
+  'busy' => '忙着',
+  'quiet' => '安静',
+  _ => '',
+};
+
 class _ChatViewState extends ConsumerState<ChatView> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
-  final List<ChatMessage> _messages = [...demoChat];
+  final List<ChatMessage> _messages = [];
   bool _sending = false;
   String _streamingText = '';
 
@@ -45,6 +53,8 @@ class _ChatViewState extends ConsumerState<ChatView> {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(companionStateProvider).valueOrNull;
+    final companion = state?.companion;
     final pendingPhoto = ref.watch(pendingChatPhotoProvider);
     final pendingNote = ref.watch(pendingChatNoteProvider);
     final landscape = MediaQuery.sizeOf(context).width > 600;
@@ -60,8 +70,12 @@ class _ChatViewState extends ConsumerState<ChatView> {
     return PhonePage(
       key: const Key('chat_view'),
       header: ScreenHeader(
-        title: '笨笨',
-        subtitle: '旧书店 · 有点不舒服 · 醒着',
+        title: companion?.displayName ?? '笨笨',
+        subtitle: [
+          companion?.place?.name,
+          companion?.condition,
+          _statusLabel(companion?.status),
+        ].whereType<String>().where((value) => value.isNotEmpty).join(' · '),
         leading: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -98,7 +112,11 @@ class _ChatViewState extends ConsumerState<ChatView> {
                 landscape ? AppSpacing.sm(context) : context.r(104),
               ),
               children: [
-                _DayDivider(label: '今天 · 15:02'),
+                _DayDivider(
+                  label: state?.world.clockLabel == null
+                      ? '今天'
+                      : '今天 · ${state!.world.clockLabel}',
+                ),
                 SizedBox(height: context.r(14)),
                 for (var i = 0; i < _messages.length; i++) ...[
                   if (i > 0)
@@ -155,28 +173,29 @@ class _ChatViewState extends ConsumerState<ChatView> {
                   ),
                 ],
                 SizedBox(height: AppSpacing.sm(context)),
-                Row(
-                  children: [
-                    ClipOval(
-                      child: SizedBox(
-                        width: context.r(24),
-                        height: context.r(24),
-                        child: Image.asset(
-                          'assets/media/book1.jpg',
-                          fit: BoxFit.cover,
+                if (_sending)
+                  Row(
+                    children: [
+                      ClipOval(
+                        child: SizedBox(
+                          width: context.r(24),
+                          height: context.r(24),
+                          child: Image.asset(
+                            'assets/media/book1.jpg',
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: AppSpacing.xs(context)),
-                    Text(
-                      '他正在输入...',
-                      style: AppTextStyles.caption(context).copyWith(
-                        fontSize: context.sp(9),
-                        color: AppColors.inkFaint,
+                      SizedBox(width: AppSpacing.xs(context)),
+                      Text(
+                        '他正在输入...',
+                        style: AppTextStyles.caption(context).copyWith(
+                          fontSize: context.sp(9),
+                          color: AppColors.inkFaint,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -245,18 +264,30 @@ class _ChatViewState extends ConsumerState<ChatView> {
     _scrollToEnd();
     var completed = false;
     try {
-      await for (final event in ref.read(apiProvider).streamChat(text)) {
+      final stream = ref
+          .read(apiProvider)
+          .streamChat(
+            text,
+            clientMessageId: 'local-${DateTime.now().microsecondsSinceEpoch}',
+          );
+      await for (final event in stream) {
         if (!mounted) return;
-        if (event.event == 'delta') {
-          setState(() => _streamingText += event.data);
+        if (event.isDelta) {
+          final delta = event.text ?? '';
+          if (delta.isEmpty) continue;
+          setState(() => _streamingText += delta);
           _scrollToEnd();
-        } else if (event.event == 'done') {
+        } else if (event.isDone) {
+          // 契约 done 带完整回复；旧后端裸文本时用累计 delta 兜底。
+          final reply = (event.text ?? '').isEmpty
+              ? _streamingText
+              : event.text!;
           completed = true;
           setState(() {
             _messages.add(
               ChatMessage(
                 id: 'assistant-${DateTime.now().microsecondsSinceEpoch}',
-                text: event.data,
+                text: reply,
                 fromCompanion: true,
                 read: true,
               ),
@@ -265,8 +296,12 @@ class _ChatViewState extends ConsumerState<ChatView> {
             _sending = false;
           });
           _scrollToEnd();
-        } else if (event.event == 'error') {
-          throw ApiException(502, event.data);
+        } else if (event.isError) {
+          throw ApiException(
+            502,
+            event.message ?? event.rawData,
+            code: event.code,
+          );
         }
       }
     } catch (error) {

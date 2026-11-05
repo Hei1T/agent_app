@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/auth/auth_controller.dart';
+import '../../../core/contract/companion_state.dart';
+import '../../../core/providers/app_providers.dart';
 import '../../../core/responsive/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../shared/models/companion.dart';
 import '../../../shared/widgets/app_icon.dart';
 import '../../../shared/widgets/app_icon_button.dart';
 import '../../../shared/widgets/app_sheet.dart';
 import '../../../shared/widgets/fade_mask.dart';
 import '../../../shared/widgets/phone_page.dart';
 import '../../../shared/widgets/screen_header.dart';
-import '../data/demo_profile.dart';
+import '../../today/data/companion_state_mapper.dart';
+import '../data/profile_mapper.dart';
 import '../domain/entities/profile_data.dart';
 import 'widgets/profile_hero.dart';
 import 'widgets/profile_section.dart';
@@ -58,34 +61,17 @@ class ProfileView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final life = ref.watch(lifeProvider).valueOrNull;
-    final people = life == null
-        ? demoProfile.people
-        : life.people
-              .map(
-                (p) => Person(
-                  name: p.name,
-                  role: p.role,
-                  note: p.note.isEmpty ? p.place : p.note,
-                  photo: 'assets/media/book2.jpg',
-                ),
-              )
-              .toList();
-    final things = life == null
-        ? demoProfile.things
-        : life.items
-              .map(
-                (item) => Thing(
-                  name: (item['kind'] as String?) ?? '物件',
-                  detail: (item['note'] as String?) ?? '在他身边',
-                ),
-              )
-              .toList();
+    final async = ref.watch(companionStateProvider);
+    final state = async.valueOrNull;
+    final companion = state == null ? null : companionOf(state);
+    final subtitle = companion == null
+        ? '正在连到他…'
+        : (companion.place.isEmpty ? '栖湾' : '栖湾 · ${companion.place}');
     return PhonePage(
       key: const Key('profile_view'),
       header: ScreenHeader(
         title: '他',
-        subtitle: '栖湾 · 旧书店',
+        subtitle: subtitle,
         actions: [
           AppIconButton(
             icon: AppIconName.more,
@@ -93,49 +79,104 @@ class ProfileView extends ConsumerWidget {
           ),
         ],
       ),
-      child: FadeMask(
-        child: ListView(
-          key: const Key('profile_feed'),
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.pageH(context),
-            context.r(62),
-            AppSpacing.pageH(context),
-            context.isPortrait ? context.r(112) : AppSpacing.lg(context),
+      child: async.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => _ErrorState(
+          message: error.toString(),
+          onRetry: () => ref.invalidate(companionStateProvider),
+        ),
+        data: (data) => _ProfileBody(state: data, companion: companionOf(data)),
+      ),
+    );
+  }
+}
+
+class _ProfileBody extends StatelessWidget {
+  const _ProfileBody({required this.state, required this.companion});
+
+  final CompanionState state;
+  final Companion companion;
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = profileOf(state);
+    return FadeMask(
+      child: ListView(
+        key: const Key('profile_feed'),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.pageH(context),
+          context.r(62),
+          AppSpacing.pageH(context),
+          context.isPortrait ? context.r(112) : AppSpacing.lg(context),
+        ),
+        children: [
+          ProfileHero(companion: companion),
+          SizedBox(height: AppSpacing.md(context)),
+          if (companion.quote.isNotEmpty) ...[
+            _QuoteCard(companion: companion),
+            SizedBox(height: AppSpacing.md(context)),
+          ],
+          _ProfileTiles(
+            state: state,
+            people: profile.people,
+            things: profile.things,
           ),
+          SizedBox(height: AppSpacing.md(context)),
+          // TODO(app-contract): 朋友圈 / 日记 media 接口接入后换成后端照片。
+          const ProfileSection(
+            key: Key('profile_section_photos'),
+            title: '最近拍下的',
+            child: _PhotoRow(),
+          ),
+          SizedBox(height: AppSpacing.md(context)),
+          ProfileSection(
+            key: const Key('profile_section_people'),
+            title: '他记得的人',
+            meta: '${profile.people.length} 个街坊',
+            child: _PeopleList(people: profile.people),
+          ),
+          SizedBox(height: AppSpacing.md(context)),
+          ProfileSection(
+            key: const Key('profile_section_things'),
+            title: '他的家当',
+            meta: '${profile.things.length} 件',
+            child: _ThingsList(things: profile.things),
+          ),
+          SizedBox(height: AppSpacing.md(context)),
+          const ProfileSection(
+            key: Key('profile_section_days'),
+            title: '更早的日子',
+            child: _DayStrip(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.lg(context)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const ProfileHero(companionName: '笨笨', day: 5),
-            SizedBox(height: AppSpacing.md(context)),
-            const _QuoteCard(),
-            SizedBox(height: AppSpacing.md(context)),
-            const _ProfileTiles(),
-            SizedBox(height: AppSpacing.md(context)),
-            ProfileSection(
-              key: const Key('profile_section_photos'),
-              title: '最近拍下的',
-              meta: '全部 94 张',
-              child: const _PhotoRow(),
+            Text('连不上他', style: Theme.of(context).textTheme.titleMedium),
+            SizedBox(height: AppSpacing.sm(context)),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             SizedBox(height: AppSpacing.md(context)),
-            ProfileSection(
-              key: const Key('profile_section_people'),
-              title: '他记得的人',
-              meta: '4 个街坊',
-              child: _PeopleList(people: people),
-            ),
-            SizedBox(height: AppSpacing.md(context)),
-            ProfileSection(
-              key: const Key('profile_section_things'),
-              title: '他的家当',
-              meta: '6 件',
-              child: _ThingsList(things: things),
-            ),
-            SizedBox(height: AppSpacing.md(context)),
-            ProfileSection(
-              key: const Key('profile_section_days'),
-              title: '更早的日子',
-              meta: '10月25日 — 10月29日',
-              child: const _DayStrip(),
-            ),
+            FilledButton(onPressed: onRetry, child: const Text('重试')),
           ],
         ),
       ),
@@ -188,11 +229,28 @@ class _PeopleList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (people.isEmpty) return const _EmptyHint(text: '还没有记住的人。');
     return Column(
       children: [
         for (var i = 0; i < people.length; i++)
           _PersonRow(person: people[i], showDivider: i != people.length - 1),
       ],
+    );
+  }
+}
+
+class _EmptyHint extends StatelessWidget {
+  const _EmptyHint({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: AppTextStyles.caption(
+        context,
+      ).copyWith(fontSize: context.sp(11), color: AppColors.inkMuted),
     );
   }
 }
@@ -246,6 +304,9 @@ class _PersonText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final note = person.note.isEmpty
+        ? person.role
+        : '${person.role} · ${person.note}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -258,7 +319,7 @@ class _PersonText extends StatelessWidget {
           ).copyWith(fontSize: context.sp(13), color: AppColors.ink),
         ),
         Text(
-          '${person.role} · ${person.note}',
+          note,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppTextStyles.caption(
@@ -283,6 +344,7 @@ class _ThingsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (things.isEmpty) return const _EmptyHint(text: '还没有记下的家当。');
     return Column(
       children: [
         for (var i = 0; i < things.length; i++)
@@ -377,7 +439,9 @@ class _ThingText extends StatelessWidget {
 }
 
 class _QuoteCard extends StatelessWidget {
-  const _QuoteCard();
+  const _QuoteCard({required this.companion});
+
+  final Companion companion;
 
   @override
   Widget build(BuildContext context) {
@@ -408,22 +472,26 @@ class _QuoteCard extends StatelessWidget {
           ),
           SizedBox(height: AppSpacing.xs(context)),
           Text(
-            '“书不会跑，人会跑。”',
+            '“${companion.quote}”',
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.body(context).copyWith(
               fontSize: context.sp(14.5),
               height: 1.6,
               color: AppColors.ink,
             ),
           ),
-          SizedBox(height: AppSpacing.xs(context)),
-          Text(
-            '今天 15:32 · 旧书店',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.caption(
-              context,
-            ).copyWith(fontSize: context.sp(10.5), color: AppColors.inkFaint),
-          ),
+          if (companion.quoteMeta.isNotEmpty) ...[
+            SizedBox(height: AppSpacing.xs(context)),
+            Text(
+              companion.quoteMeta,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.caption(
+                context,
+              ).copyWith(fontSize: context.sp(10.5), color: AppColors.inkFaint),
+            ),
+          ],
         ],
       ),
     );
@@ -431,35 +499,64 @@ class _QuoteCard extends StatelessWidget {
 }
 
 class _ProfileTiles extends StatelessWidget {
-  const _ProfileTiles();
+  const _ProfileTiles({
+    required this.state,
+    required this.people,
+    required this.things,
+  });
 
-  static const _tiles = [
-    _TileData('去过的地方', '3', '旧书店 · 旧货市场 · 河堤'),
-    _TileData('见过的人', '4', '林叔 · 张姨 · 老赵 · 阿海'),
-    _TileData('记着的事', '2', '洗衣机 · 后院的旧书'),
-    _TileData('这些天', '5', '从 10月28日 到今天'),
-  ];
+  final CompanionState state;
+  final List<Person> people;
+  final List<Thing> things;
 
   @override
   Widget build(BuildContext context) {
+    final latest = state.events.isEmpty ? null : state.events.first;
+    final peopleNames = people
+        .map((person) => person.name)
+        .where((name) => name.isNotEmpty)
+        .take(3)
+        .join(' · ');
+    final thingNames = things
+        .map((thing) => thing.name)
+        .where((name) => name.isNotEmpty)
+        .take(3)
+        .join(' · ');
+    final place = state.companion.place?.name ?? '';
+    final tiles = [
+      _TileData('见过的人', '${people.length}', peopleNames),
+      _TileData('他的物件', '${things.length}', thingNames),
+      _TileData(
+        '今天的事',
+        '${state.events.length}',
+        latest == null
+            ? ''
+            : (latest.title.isEmpty ? latest.detail : latest.title),
+      ),
+      _TileData(
+        '这些天',
+        state.companion.day?.toString() ?? '—',
+        place.isEmpty ? '在栖湾' : '在$place',
+      ),
+    ];
     final gap = AppSpacing.sm(context);
     return Column(
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _Tile(data: _tiles[0])),
+            Expanded(child: _Tile(data: tiles[0])),
             SizedBox(width: gap),
-            Expanded(child: _Tile(data: _tiles[1])),
+            Expanded(child: _Tile(data: tiles[1])),
           ],
         ),
         SizedBox(height: gap),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _Tile(data: _tiles[2])),
+            Expanded(child: _Tile(data: tiles[2])),
             SizedBox(width: gap),
-            Expanded(child: _Tile(data: _tiles[3])),
+            Expanded(child: _Tile(data: tiles[3])),
           ],
         ),
       ],
@@ -533,6 +630,7 @@ class _DayStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // TODO(app-contract): 等日记 API 返回真实照片后，替换成最近几天的真实缩略图。
     return SizedBox(
       height: context.r(62),
       child: Row(

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/contract/moment.dart';
 import '../../../../core/responsive/responsive.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../domain/entities/moment.dart';
 import 'moment_photo.dart';
 
 /// 一条动态：单页平面化，没有卡片外壳，只在底部留一条 hairline。
@@ -15,6 +15,7 @@ class MomentCard extends StatelessWidget {
     super.key,
     required this.moment,
     required this.liked,
+    required this.likeCount,
     required this.onLike,
     required this.onTap,
     this.comments,
@@ -23,6 +24,7 @@ class MomentCard extends StatelessWidget {
 
   final Moment moment;
   final bool liked;
+  final int likeCount;
   final VoidCallback onLike;
   final VoidCallback onTap;
   final List<MomentComment>? comments;
@@ -33,7 +35,10 @@ class MomentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final preview = comments ?? moment.comments;
-    final photos = moment.photos.take(3).toList();
+    final photos = moment.photos
+        .where((photo) => photo.url.isNotEmpty)
+        .take(3)
+        .toList();
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -73,7 +78,7 @@ class MomentCard extends StatelessWidget {
                 padding: EdgeInsets.only(top: context.r(9)),
                 child: _Actions(
                   liked: liked,
-                  likes: moment.likes.length + (liked ? 1 : 0),
+                  likes: likeCount,
                   comments: preview.length,
                   onLike: onLike,
                   onComment: onTap,
@@ -95,9 +100,10 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = moment.place.isEmpty
-        ? moment.time
-        : '${moment.time} · ${moment.place}';
+    final author = moment.author.name.isEmpty ? '他' : moment.author.name;
+    final time = moment.displayTimeLabel;
+    final place = moment.place ?? '';
+    final meta = place.isEmpty ? time : '$time · $place';
     return Row(
       children: [
         ClipRRect(
@@ -118,7 +124,7 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                moment.author,
+                author,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.bodyStrong(context).copyWith(
@@ -154,7 +160,7 @@ class _Header extends StatelessWidget {
 class _PhotoGrid extends StatelessWidget {
   const _PhotoGrid({required this.photos});
 
-  final List<String> photos;
+  final List<MomentPhoto> photos;
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +169,7 @@ class _PhotoGrid extends StatelessWidget {
         aspectRatio: 1.9,
         child: ClipRRect(
           borderRadius: BorderRadius.circular(context.r(9)),
-          child: MomentPhoto(source: photos.first, cacheWidth: 720),
+          child: MomentPhotoView(source: photos.first.url, cacheWidth: 720),
         ),
       );
     }
@@ -177,7 +183,7 @@ class _PhotoGrid extends StatelessWidget {
               aspectRatio: 1.15,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(context.r(9)),
-                child: MomentPhoto(source: photos[i], cacheWidth: 480),
+                child: MomentPhotoView(source: photos[i].url, cacheWidth: 480),
               ),
             ),
           ),
@@ -271,6 +277,7 @@ class _CommentPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final first = comments.first;
+    final author = first.author.name.isEmpty ? '他' : first.author.name;
     final base = AppTextStyles.body(context).copyWith(
       fontSize: context.sp(11),
       height: 1.5,
@@ -288,7 +295,7 @@ class _CommentPreview extends StatelessWidget {
             TextSpan(
               children: [
                 TextSpan(
-                  text: '${first.author}：',
+                  text: '$author：',
                   style: base.copyWith(
                     color: AppColors.ink.withValues(alpha: 0.7),
                     fontWeight: FontWeight.w500,

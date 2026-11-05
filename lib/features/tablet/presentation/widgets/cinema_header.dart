@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/contract/contract_format.dart';
+import '../../../../core/providers/app_providers.dart';
 import '../../../../core/responsive/responsive.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../shared/widgets/app_icon_button.dart';
 import '../../../../shared/widgets/app_icon.dart';
+import '../../../../shared/widgets/app_icon_button.dart';
 
-class CinemaHeader extends StatelessWidget {
+class CinemaHeader extends ConsumerWidget {
   const CinemaHeader({
     super.key,
     required this.activeIndex,
@@ -22,7 +25,15 @@ class CinemaHeader extends StatelessWidget {
   static const _labels = ['今天', '朋友圈', '日记', '他'];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(companionStateProvider).valueOrNull;
+    final place = state?.companion.place?.name ?? '';
+    final world = state?.world;
+    final clock = world?.clockLabel ?? '';
+    final weather = [
+      world?.weather ?? '',
+      contractTemperatureLabel(world?.temperatureC) ?? '',
+    ].where((part) => part.isNotEmpty).join(' ');
     return SafeArea(
       bottom: false,
       child: Padding(
@@ -32,7 +43,7 @@ class CinemaHeader extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _Location(),
+            _Location(place: place),
             Expanded(
               child: _Nav(
                 activeIndex: activeIndex,
@@ -40,7 +51,7 @@ class CinemaHeader extends StatelessWidget {
                 onSelect: onSelect,
               ),
             ),
-            _Meta(onMore: onMore),
+            _Meta(clock: clock, weather: weather, onMore: onMore),
           ],
         ),
       ),
@@ -49,6 +60,10 @@ class CinemaHeader extends StatelessWidget {
 }
 
 class _Location extends StatelessWidget {
+  const _Location({required this.place});
+
+  final String place;
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -63,7 +78,7 @@ class _Location extends StatelessWidget {
         ),
         SizedBox(width: AppSpacing.sm(context)),
         Text(
-          '栖湾 · 旧书店',
+          place.isEmpty ? '栖湾' : '栖湾 · $place',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppTextStyles.caption(context),
@@ -130,8 +145,14 @@ class _Nav extends StatelessWidget {
 }
 
 class _Meta extends StatelessWidget {
-  const _Meta({required this.onMore});
+  const _Meta({
+    required this.clock,
+    required this.weather,
+    required this.onMore,
+  });
 
+  final String clock;
+  final String weather;
   final VoidCallback onMore;
 
   @override
@@ -142,10 +163,14 @@ class _Meta extends StatelessWidget {
         AppIconButton(icon: AppIconName.search, onTap: () {}),
         SizedBox(width: AppSpacing.xs(context)),
         AppIconButton(icon: AppIconName.camera, onTap: () {}),
-        SizedBox(width: AppSpacing.sm(context)),
-        Text('17:42', style: AppTextStyles.caption(context)),
-        SizedBox(width: AppSpacing.sm(context)),
-        Text('雨 1.7°C', style: AppTextStyles.caption(context)),
+        if (clock.isNotEmpty) ...[
+          SizedBox(width: AppSpacing.sm(context)),
+          Text(clock, maxLines: 1, style: AppTextStyles.caption(context)),
+        ],
+        if (weather.isNotEmpty) ...[
+          SizedBox(width: AppSpacing.sm(context)),
+          Text(weather, maxLines: 1, style: AppTextStyles.caption(context)),
+        ],
         SizedBox(width: AppSpacing.sm(context)),
         AppIconButton(icon: AppIconName.more, onTap: onMore),
       ],

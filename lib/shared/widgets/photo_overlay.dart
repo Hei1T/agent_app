@@ -15,10 +15,7 @@ final pendingChatPhotoProvider = StateProvider<XFile?>((ref) => null);
 final pendingChatNoteProvider = StateProvider<String?>((ref) => null);
 
 /// 所有入口共用同一个 Sheet 宿主，不再为拍照单独做浮层。
-Future<void> showPhotoPicker(
-  BuildContext context, {
-  bool withNote = false,
-}) {
+Future<void> showPhotoPicker(BuildContext context, {bool withNote = false}) {
   return showAppSheet(
     context,
     title: '给他看一张照片',
@@ -59,8 +56,9 @@ class _PhotoPickerContentState extends State<PhotoPickerContent> {
     final container = ProviderScope.containerOf(context);
     container.read(pendingChatPhotoProvider.notifier).state = file;
     final note = _note.text.trim();
-    container.read(pendingChatNoteProvider.notifier).state =
-        note.isEmpty ? null : note;
+    container.read(pendingChatNoteProvider.notifier).state = note.isEmpty
+        ? null
+        : note;
     Navigator.of(context).pop();
     context.go('/chat');
   }
@@ -154,7 +152,9 @@ class _PhotoPickerContentState extends State<PhotoPickerContent> {
           SizedBox(height: AppSpacing.xs(context)),
           Text(
             '照片会进入你们的对话，不会出现在朋友圈。',
-            style: AppTextStyles.micro(context).copyWith(fontSize: context.sp(7)),
+            style: AppTextStyles.micro(
+              context,
+            ).copyWith(fontSize: context.sp(7)),
           ),
         ],
       ],
@@ -182,14 +182,16 @@ class _Action extends StatelessWidget {
         decoration: BoxDecoration(
           color: primary ? AppColors.tint : AppColors.surface,
           borderRadius: BorderRadius.circular(context.r(12)),
-          border: Border.all(color: primary ? AppColors.tint : AppColors.border),
+          border: Border.all(
+            color: primary ? AppColors.tint : AppColors.border,
+          ),
         ),
         child: Center(
           child: Text(
             label,
-            style: AppTextStyles.bodyStrong(context).copyWith(
-              color: primary ? AppColors.ground : AppColors.ink,
-            ),
+            style: AppTextStyles.bodyStrong(
+              context,
+            ).copyWith(color: primary ? AppColors.ground : AppColors.ink),
           ),
         ),
       ),

@@ -1,28 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/responsive/responsive.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/providers/app_providers.dart';
 import '../../../../shared/widgets/app_icon_button.dart';
 import '../../../../shared/widgets/app_icon.dart';
 import '../../../../shared/widgets/glass_panel.dart';
-import '../../../chat/data/demo_chat.dart';
 import '../../../chat/domain/entities/chat_message.dart';
 
-class CinemaChatOverlay extends StatefulWidget {
+class CinemaChatOverlay extends ConsumerStatefulWidget {
   const CinemaChatOverlay({super.key, required this.onClose});
 
   final VoidCallback onClose;
 
   @override
-  State<CinemaChatOverlay> createState() => _CinemaChatOverlayState();
+  ConsumerState<CinemaChatOverlay> createState() => _CinemaChatOverlayState();
 }
 
-class _CinemaChatOverlayState extends State<CinemaChatOverlay> {
+class _CinemaChatOverlayState extends ConsumerState<CinemaChatOverlay> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
-  late final List<ChatMessage> _messages = [...demoChat];
+  final List<ChatMessage> _messages = [];
+  bool _sending = false;
+  String _streamingText = '';
 
   @override
   void dispose() {
@@ -47,11 +50,21 @@ class _CinemaChatOverlayState extends State<CinemaChatOverlay> {
               child: ListView.separated(
                 controller: _scroll,
                 padding: EdgeInsets.all(AppSpacing.sm(context)),
-                itemCount: _messages.length,
+                itemCount: _messages.length + (_streamingText.isEmpty ? 0 : 1),
                 separatorBuilder: (context, index) =>
                     SizedBox(height: AppSpacing.xs(context)),
-                itemBuilder: (context, index) =>
-                    _MiniBubble(message: _messages[index]),
+                itemBuilder: (context, index) {
+                  if (index == _messages.length) {
+                    return _MiniBubble(
+                      message: ChatMessage(
+                        id: 'streaming',
+                        text: _streamingText,
+                        fromCompanion: true,
+                      ),
+                    );
+                  }
+                  return _MiniBubble(message: _messages[index]);
+                },
               ),
             ),
             _OverlayComposer(controller: _controller, onSend: _send),
@@ -61,22 +74,90 @@ class _CinemaChatOverlayState extends State<CinemaChatOverlay> {
     );
   }
 
-  void _send() {
+  Future<void> _send() async {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _sending) return;
+    final stamp = DateTime.now().millisecondsSinceEpoch;
     setState(() {
       _messages.add(
         ChatMessage(
-          id: 'local-${DateTime.now().millisecondsSinceEpoch}',
+          id: 'local-$stamp',
           text: text,
           fromCompanion: false,
           read: true,
         ),
       );
       _controller.clear();
+      _sending = true;
+      _streamingText = '';
     });
+    _scrollToEnd();
+    try {
+      final stream = ref
+          .read(apiProvider)
+          .streamChat(text, clientMessageId: 'tablet-$stamp');
+      await for (final event in stream) {
+        if (!mounted) return;
+        if (event.isDelta) {
+          final delta = event.text ?? '';
+          if (delta.isEmpty) continue;
+          setState(() => _streamingText += delta);
+          _scrollToEnd();
+        } else if (event.isDone) {
+          final reply = (event.text ?? '').isEmpty
+              ? _streamingText
+              : event.text!;
+          final replyStamp = DateTime.now().microsecondsSinceEpoch;
+          setState(() {
+            _messages.add(
+              ChatMessage(
+                id: 'assistant-$replyStamp',
+                text: reply,
+                fromCompanion: true,
+                read: true,
+              ),
+            );
+            _streamingText = '';
+            _sending = false;
+          });
+          _scrollToEnd();
+        } else if (event.isError) {
+          throw StateError(event.message ?? event.rawData);
+        }
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          if (_streamingText.isNotEmpty) {
+            final partialStamp = DateTime.now().microsecondsSinceEpoch;
+            _messages.add(
+              ChatMessage(
+                id: 'partial-$partialStamp',
+                text: _streamingText,
+                fromCompanion: true,
+              ),
+            );
+          }
+          _streamingText = '';
+          _sending = false;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('他那边暂时没接上：$error')));
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  void _scrollToEnd() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      if (!_scroll.hasClients) return;
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOut,
+      );
     });
   }
 }

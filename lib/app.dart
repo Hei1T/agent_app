@@ -29,7 +29,9 @@ class BenbenApp extends ConsumerWidget {
             child ?? const SizedBox.shrink(),
             Positioned.fill(child: AppSheetHost(key: AppSheetHost.hostKey)),
             Positioned(
-              top: 0, left: 0, right: 0,
+              top: 0,
+              left: 0,
+              right: 0,
               child: Material(
                 type: MaterialType.transparency,
                 child: SafeArea(

@@ -23,7 +23,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/splash', builder: (context, state) => const Scaffold(body: Center(child: CircularProgressIndicator()))),
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) =>
+            const Scaffold(body: Center(child: CircularProgressIndicator())),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginView()),
       ShellRoute(
         builder: (context, state, child) =>

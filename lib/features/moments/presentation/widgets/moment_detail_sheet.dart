@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/contract/contract_format.dart';
+import '../../../../core/contract/moment.dart';
 import '../../../../core/responsive/responsive.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../shared/widgets/full_screen_photo_preview.dart';
-import '../../domain/entities/moment.dart';
 import 'moment_photo.dart';
 
 class MomentDetailSheet extends StatefulWidget {
@@ -19,9 +20,13 @@ class MomentDetailSheet extends StatefulWidget {
 
   final Moment moment;
   final bool liked;
-  final VoidCallback? onLike;
+
+  /// 返回 true 表示后端已确认；false 时本弹层回滚本地状态。
+  final Future<bool> Function()? onLike;
   final List<MomentComment>? comments;
-  final ValueChanged<String>? onAddComment;
+
+  /// 返回后端留言；null 表示失败，本弹层回滚临时留言。
+  final Future<MomentComment?> Function(String text)? onAddComment;
 
   @override
   State<MomentDetailSheet> createState() => _MomentDetailSheetState();
@@ -34,6 +39,7 @@ class _MomentDetailSheetState extends State<MomentDetailSheet> {
   late final List<MomentComment> _comments = [
     ...(widget.comments ?? widget.moment.comments),
   ];
+  bool _liking = false;
 
   @override
   void dispose() {
@@ -44,6 +50,9 @@ class _MomentDetailSheetState extends State<MomentDetailSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final photos = widget.moment.photos
+        .where((photo) => photo.url.isNotEmpty)
+        .toList();
     return Column(
       children: [
         Expanded(
@@ -68,14 +77,20 @@ class _MomentDetailSheetState extends State<MomentDetailSheet> {
                   ),
                 ),
               ),
-              _PhotoRow(photos: widget.moment.photos, onOpen: _openPhoto),
+              _PhotoRow(photos: photos, onOpen: _openPhoto),
               _DetailActions(
                 liked: _liked,
                 likeCount: widget.moment.likes.length + (_liked ? 1 : 0),
                 commentCount: _comments.length,
                 onLike: _toggleLike,
               ),
-              _LikesSection(names: [...widget.moment.likes, if (_liked) '你']),
+              _LikesSection(
+                names: [
+                  for (final like in widget.moment.likes)
+                    if (like.name != null && like.name!.isNotEmpty) like.name!,
+                  if (_liked && !_serverPlayerLiked) '你',
+                ],
+              ),
               _CommentsSection(comments: _comments),
             ],
           ),
@@ -85,19 +100,64 @@ class _MomentDetailSheetState extends State<MomentDetailSheet> {
     );
   }
 
-  void _toggleLike() {
-    setState(() => _liked = !_liked);
-    widget.onLike?.call();
+  bool get _serverPlayerLiked =>
+      widget.moment.likes.any((like) => like.actorType == 'player');
+
+  Future<void> _toggleLike() async {
+    if (_liking) return;
+    setState(() {
+      _liked = !_liked;
+      _liking = true;
+    });
+    final onLike = widget.onLike;
+    final ok = onLike == null ? true : await onLike();
+    if (!mounted) return;
+    setState(() => _liking = false);
+    if (!ok) {
+      setState(() => _liked = !_liked);
+      _toast('点赞没同步上，已回滚。');
+    }
   }
 
-  void _send() {
+  Future<void> _send() async {
     final text = _input.text.trim();
     if (text.isEmpty) return;
+    final temp = MomentComment(
+      id: 'local-${DateTime.now().microsecondsSinceEpoch}',
+      author: const MomentAuthor(type: 'player', name: '你'),
+      text: text,
+      timeLabel: '刚刚',
+    );
     setState(() {
-      _comments.add(MomentComment(author: '你', text: text, time: '刚刚'));
+      _comments.add(temp);
       _input.clear();
-      widget.onAddComment?.call(text);
     });
+    _scrollToEnd();
+    final onAddComment = widget.onAddComment;
+    final saved = onAddComment == null ? null : await onAddComment(text);
+    if (!mounted) return;
+    if (saved == null) {
+      setState(() {
+        _comments.removeWhere((comment) => comment.id == temp.id);
+      });
+      _toast('留言没发出去，已回滚。');
+      return;
+    }
+    setState(() {
+      final index = _comments.indexWhere((comment) => comment.id == temp.id);
+      if (index >= 0) _comments[index] = saved;
+    });
+    _scrollToEnd();
+  }
+
+  void _toast(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _scrollToEnd() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
       _scroll.animateTo(
@@ -120,6 +180,10 @@ class _AuthorHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final author = moment.author.name.isEmpty ? '他' : moment.author.name;
+    final time = moment.displayTimeLabel;
+    final place = moment.place ?? '';
+    final meta = place.isEmpty ? time : '$time · $place';
     return Row(
       children: [
         ClipRRect(
@@ -140,7 +204,7 @@ class _AuthorHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                moment.author,
+                author,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.bodyStrong(
@@ -148,7 +212,7 @@ class _AuthorHeader extends StatelessWidget {
                 ).copyWith(fontSize: context.sp(13)),
               ),
               Text(
-                '${moment.time} · ${moment.place}',
+                meta,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.caption(context).copyWith(
@@ -167,7 +231,7 @@ class _AuthorHeader extends StatelessWidget {
 class _PhotoRow extends StatelessWidget {
   const _PhotoRow({required this.photos, required this.onOpen});
 
-  final List<String> photos;
+  final List<MomentPhoto> photos;
   final ValueChanged<String> onOpen;
 
   @override
@@ -177,12 +241,15 @@ class _PhotoRow extends StatelessWidget {
       return Padding(
         padding: EdgeInsets.only(top: context.r(11)),
         child: GestureDetector(
-          onTap: () => onOpen(photos.first),
+          onTap: () => onOpen(photos.first.url),
           child: AspectRatio(
             aspectRatio: 1.9,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(context.r(9)),
-              child: MomentPhoto(source: photos.first, cacheWidth: 1080),
+              child: MomentPhotoView(
+                source: photos.first.url,
+                cacheWidth: 1080,
+              ),
             ),
           ),
         ),
@@ -199,10 +266,13 @@ class _PhotoRow extends StatelessWidget {
               child: AspectRatio(
                 aspectRatio: 1,
                 child: GestureDetector(
-                  onTap: () => onOpen(photos[i]),
+                  onTap: () => onOpen(photos[i].url),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(context.r(9)),
-                    child: MomentPhoto(source: photos[i], cacheWidth: 720),
+                    child: MomentPhotoView(
+                      source: photos[i].url,
+                      cacheWidth: 720,
+                    ),
                   ),
                 ),
               ),
@@ -365,61 +435,73 @@ class _CommentsSection extends StatelessWidget {
             ).copyWith(fontSize: context.sp(9.5), color: AppColors.inkFaint),
           )
         else
-          for (final comment in comments)
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: context.r(7)),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: context.r(26),
-                    height: context.r(26),
-                    alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                      color: Color(0x14FFFFFF),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      comment.author.isEmpty
-                          ? '?'
-                          : comment.author.substring(0, 1),
-                      style: AppTextStyles.caption(
-                        context,
-                      ).copyWith(fontSize: context.sp(9)),
-                    ),
-                  ),
-                  SizedBox(width: context.r(8)),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          comment.author,
-                          style: AppTextStyles.bodyStrong(context).copyWith(
-                            fontSize: context.sp(10),
-                            color: AppColors.ink.withValues(alpha: 0.72),
-                          ),
-                        ),
-                        Text(
-                          comment.text,
-                          style: AppTextStyles.body(
-                            context,
-                          ).copyWith(fontSize: context.sp(11), height: 1.6),
-                        ),
-                        Text(
-                          comment.time,
-                          style: AppTextStyles.caption(context).copyWith(
-                            fontSize: context.sp(8.5),
-                            color: AppColors.inkFaint,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          for (final comment in comments) _CommentRow(comment: comment),
       ],
+    );
+  }
+}
+
+class _CommentRow extends StatelessWidget {
+  const _CommentRow({required this.comment});
+
+  final MomentComment comment;
+
+  @override
+  Widget build(BuildContext context) {
+    final author = comment.author.name.isEmpty ? '他' : comment.author.name;
+    final time =
+        comment.timeLabel ?? contractClockLabel(comment.createdAt) ?? '';
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: context.r(7)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: context.r(26),
+            height: context.r(26),
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: Color(0x14FFFFFF),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              author.substring(0, 1),
+              style: AppTextStyles.caption(
+                context,
+              ).copyWith(fontSize: context.sp(9)),
+            ),
+          ),
+          SizedBox(width: context.r(8)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  author,
+                  style: AppTextStyles.bodyStrong(context).copyWith(
+                    fontSize: context.sp(10),
+                    color: AppColors.ink.withValues(alpha: 0.72),
+                  ),
+                ),
+                Text(
+                  comment.text,
+                  style: AppTextStyles.body(
+                    context,
+                  ).copyWith(fontSize: context.sp(11), height: 1.6),
+                ),
+                if (time.isNotEmpty)
+                  Text(
+                    time,
+                    style: AppTextStyles.caption(context).copyWith(
+                      fontSize: context.sp(8.5),
+                      color: AppColors.inkFaint,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

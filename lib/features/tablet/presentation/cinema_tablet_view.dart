@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/providers/app_providers.dart';
 import '../../../core/responsive/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_sheet.dart';
-import '../../../shared/models/companion.dart';
+import '../../today/data/companion_state_mapper.dart';
 import 'widgets/cinema_chat_overlay.dart';
 import 'widgets/cinema_header.dart';
 import 'widgets/cinema_panels.dart';
@@ -70,19 +72,35 @@ class CinemaTabletView extends StatelessWidget {
   }
 }
 
-class _Content extends StatelessWidget {
+class _Content extends ConsumerWidget {
   const _Content({required this.activeIndex});
 
   final int activeIndex;
 
   @override
-  Widget build(BuildContext context) {
-    return switch (activeIndex) {
-      1 => const CinemaMomentsPanel(),
-      2 => const CinemaDiaryPanel(),
-      3 => const CinemaProfilePanel(),
-      _ => CinemaScene(companion: demoCompanion, dayLabel: '11月2日'),
-    };
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (activeIndex == 1) return const CinemaMomentsPanel();
+    if (activeIndex == 2) return const CinemaDiaryPanel();
+    if (activeIndex == 3) return const CinemaProfilePanel();
+    final async = ref.watch(companionStateProvider);
+    return async.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(
+        child: Text(
+          '暂时连不上他：$error',
+          textAlign: TextAlign.center,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ),
+      data: (state) => CinemaScene(
+        companion: companionOf(state),
+        dayLabel: state.companion.day == null
+            ? '今天'
+            : '第 ${state.companion.day} 天',
+      ),
+    );
   }
 }
 

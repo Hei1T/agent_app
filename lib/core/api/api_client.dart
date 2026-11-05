@@ -1,43 +1,287 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:dio/dio.dart';
+
+import '../contract/auth_contract.dart';
+import '../contract/chat_event.dart';
+import '../contract/companion_state.dart';
+import '../contract/diary.dart';
+import '../contract/moment.dart';
 import '../network/api_endpoints.dart';
 import '../network/api_exception.dart';
 import '../storage/token_storage.dart';
-
-class AuthResult {
-  const AuthResult({required this.token, required this.email});
-  final String token;
-  final String email;
-}
 
 class CreditBalance {
   const CreditBalance({
     required this.balance,
     required this.reserved,
     required this.available,
+    this.updatedAt,
   });
+
   final int balance;
   final int reserved;
   final int available;
+
+  /// RFC3339 字符串；后端补齐前可为 null。
+  final String? updatedAt;
+
   factory CreditBalance.fromJson(Map<String, dynamic> json) => CreditBalance(
     balance: (json['balance'] as num?)?.toInt() ?? 0,
     reserved: (json['reserved'] as num?)?.toInt() ?? 0,
     available: (json['available'] as num?)?.toInt() ?? 0,
+    updatedAt: json['updatedAt'] as String?,
   );
 }
 
+class ApiClient {
+  ApiClient({this.token, TokenStorage? storage})
+    : storage = storage ?? TokenStorage(),
+      _dio = Dio(
+        BaseOptions(
+          baseUrl: ApiEndpoints.baseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 120),
+          headers: const {'X-Contract-Version': '1'},
+        ),
+      ) {
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (token != null && token!.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          handler.next(options);
+        },
+      ),
+    );
+  }
+
+  String? token;
+  final TokenStorage storage;
+  final Dio _dio;
+
+  /// 任何请求收到 401 时回调，由 AuthController 负责清 token 并回登录。
+  void Function()? onUnauthorized;
+
+  static String get baseUrl => ApiEndpoints.baseUrl;
+
+  /// App 的媒体 URL：/media/... -> /api/v1/media/...
+  String? resolveMediaUrl(String source) {
+    if (source.startsWith('http')) return source;
+    if (source.startsWith('/media/')) {
+      return (StringBuffer()
+            ..write(baseUrl)
+            ..write(source))
+          .toString();
+    }
+    return null;
+  }
+
+  Map<String, String>? get imageHeaders {
+    final value = token;
+    if (value == null || value.isEmpty) return null;
+    return {'Authorization': 'Bearer $value'};
+  }
+
+  Map<String, dynamic> _data(Response<dynamic> response) {
+    final data = response.data;
+    if (data is Map<String, dynamic>) return data;
+    throw const ApiException(500, '响应格式错误');
+  }
+
+  Never _fail(DioException error) {
+    final status = error.response?.statusCode ?? 0;
+    var message = switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout => '连接超时，请稍后再试',
+      DioExceptionType.connectionError => '网络连接失败，请检查网络',
+      _ => '请求失败',
+    };
+    String? code;
+    String? requestId;
+    final data = error.response?.data;
+    if (data is Map) {
+      message = data['message']?.toString() ?? message;
+      code = data['code']?.toString();
+      requestId = data['requestId']?.toString();
+    }
+    if (status == 401) onUnauthorized?.call();
+    throw ApiException(status, message, code: code, requestId: requestId);
+  }
+
+  Future<Map<String, dynamic>> _get(
+    String path, {
+    Map<String, dynamic>? query,
+  }) async {
+    try {
+      return _data(await _dio.get<dynamic>(path, queryParameters: query));
+    } on DioException catch (error) {
+      _fail(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> _post(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    try {
+      return _data(await _dio.post<dynamic>(path, data: body));
+    } on DioException catch (error) {
+      _fail(error);
+    }
+  }
+
+  Future<AuthSession> login(String email, String password) async {
+    final data = await _post(ApiEndpoints.authLogin, {
+      'email': email,
+      'password': password,
+    });
+    final session = _sessionOrThrow(data);
+    token = session.accessToken;
+    return session;
+  }
+
+  Future<AuthSession> register(String email, String password) async {
+    final data = await _post(ApiEndpoints.authRegister, {
+      'email': email,
+      'password': password,
+    });
+    final session = _sessionOrThrow(data);
+    token = session.accessToken;
+    return session;
+  }
+
+  AuthSession _sessionOrThrow(Map<String, dynamic> data) {
+    final session = AuthSession.fromJson(data);
+    if (session.accessToken.isEmpty) {
+      throw const ApiException(502, '登录响应缺少 accessToken');
+    }
+    return session;
+  }
+
+  /// 启动时校验 token；401 会触发 [onUnauthorized]。
+  Future<AuthMe> me() async => AuthMe.fromJson(await _get(ApiEndpoints.authMe));
+
+  /// GET /companion/state，替代旧的 /core/life。
+  Future<CompanionState> state() async =>
+      CompanionState.fromJson(await _get(ApiEndpoints.companionState));
+
+  /// GET /companion/moments，替代旧的 /core/life/feed。
+  Future<MomentsPage> moments({int limit = 20, String? cursor}) async {
+    final data = await _get(
+      ApiEndpoints.companionMoments,
+      query: {'limit': limit, 'cursor': ?cursor},
+    );
+    return MomentsPage.fromJson(data);
+  }
+
+  /// GET /companion/diary（v1 扩展）。
+  Future<DiaryPage> diary({int limit = 30, String? cursor}) async {
+    final data = await _get(
+      ApiEndpoints.companionDiary,
+      query: {'limit': limit, 'cursor': ?cursor},
+    );
+    return DiaryPage.fromJson(data);
+  }
+
+  /// POST /companion/moments/:id/like（v1 扩展）。
+  Future<MomentLikeResult> likeMoment(String momentId) async {
+    final data = await _post(
+      ApiEndpoints.momentLike(momentId),
+      const <String, dynamic>{},
+    );
+    return MomentLikeResult.fromJson(data);
+  }
+
+  /// POST /companion/moments/:id/comments（v1 扩展）。
+  Future<MomentComment> addComment(String momentId, String text) async {
+    final data = await _post(ApiEndpoints.momentComments(momentId), {
+      'text': text,
+    });
+    return MomentComment.fromJson(data);
+  }
+
+  Future<CreditBalance> credits() async =>
+      CreditBalance.fromJson(await _get(ApiEndpoints.creditsBalance));
+
+  /// POST /chat，解析契约 SSE（JSON data），过渡期兼容旧 core 的裸字符串。
+  Stream<ContractChatEvent> streamChat(
+    String message, {
+    String? clientMessageId,
+  }) async* {
+    final response = await _dio.post<ResponseBody>(
+      ApiEndpoints.chat,
+      data: {'message': message, 'clientMessageId': ?clientMessageId},
+      options: Options(
+        responseType: ResponseType.stream,
+        headers: const {'Accept': 'text/event-stream'},
+        validateStatus: (status) => status != null,
+      ),
+    );
+    final body = response.data;
+    if (body == null) throw const ApiException(502, '上游没有返回流');
+    if (response.statusCode != 200) {
+      final text = await utf8.decoder.bind(body.stream).join();
+      var messageText = '请求失败';
+      String? code;
+      try {
+        final decoded = jsonDecode(text);
+        if (decoded is Map) {
+          messageText = decoded['message']?.toString() ?? messageText;
+          code = decoded['code']?.toString();
+        }
+      } catch (_) {
+        // 非 JSON 错误体，保留默认文案。
+      }
+      if (response.statusCode == 401) onUnauthorized?.call();
+      throw ApiException(response.statusCode ?? 0, messageText, code: code);
+    }
+    var event = '';
+    final data = StringBuffer();
+    await for (final line
+        in utf8.decoder.bind(body.stream).transform(const LineSplitter())) {
+      if (line.isEmpty) {
+        if (data.isNotEmpty) {
+          yield ContractChatEvent.parse(event, data.toString());
+        }
+        event = '';
+        data.clear();
+        continue;
+      }
+      if (line.startsWith('event:')) event = line.substring(6).trim();
+      if (line.startsWith('data:')) {
+        if (data.isNotEmpty) data.write('\n');
+        data.write(line.substring(5).trimLeft());
+      }
+    }
+    if (data.isNotEmpty) {
+      yield ContractChatEvent.parse(event, data.toString());
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 旧 core 透传 DTO：仅为过渡期兼容保留，App 新代码禁止使用。
+// 契约 v1 迁移完成后（API_CONTRACT_V1.md §11）随旧 /core 路径一起删除。
+// ---------------------------------------------------------------------------
+
+@Deprecated('旧 core 透传结构；改用 CompanionState')
 class LifeEvent {
   const LifeEvent({
     required this.time,
     required this.detail,
     this.feeling = '',
   });
+
   final String time;
   final String detail;
   final String feeling;
 }
 
+@Deprecated('旧 core 透传结构；改用 CompanionPerson')
 class LifePerson {
   const LifePerson({
     required this.name,
@@ -45,12 +289,14 @@ class LifePerson {
     required this.note,
     required this.place,
   });
+
   final String name;
   final String role;
   final String note;
   final String place;
 }
 
+@Deprecated('旧 core 透传结构；改用 CompanionState')
 class LifeSnapshot {
   const LifeSnapshot({
     required this.available,
@@ -70,6 +316,7 @@ class LifeSnapshot {
     required this.items,
     this.diary,
   });
+
   final bool available;
   final String place;
   final String condition;
@@ -86,6 +333,7 @@ class LifeSnapshot {
   final List<LifePerson> people;
   final List<Map<String, dynamic>> items;
   final String? diary;
+
   factory LifeSnapshot.fromJson(Map<String, dynamic> json) {
     final world =
         (json['world'] as Map<String, dynamic>?) ?? const <String, dynamic>{};
@@ -130,6 +378,7 @@ class LifeSnapshot {
   }
 }
 
+@Deprecated('旧 core feed 透传结构；改用 MomentsPage / Moment')
 class RemoteMoment {
   const RemoteMoment({
     required this.id,
@@ -139,6 +388,7 @@ class RemoteMoment {
     required this.text,
     required this.photos,
   });
+
   final String id;
   final String author;
   final String time;
@@ -147,178 +397,12 @@ class RemoteMoment {
   final List<String> photos;
 }
 
+@Deprecated('旧裸 SSE 事件；改用 ContractChatEvent')
 class ChatEvent {
   const ChatEvent(this.event, this.data);
+
   final String event;
   final String data;
-}
-
-class ApiClient {
-  ApiClient({this.token, TokenStorage? storage})
-    : storage = storage ?? TokenStorage(),
-      _dio = Dio(
-        BaseOptions(
-          baseUrl: ApiEndpoints.baseUrl,
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 120),
-        ),
-      ) {
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          if (token != null && token!.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          handler.next(options);
-        },
-      ),
-    );
-  }
-
-  String? token;
-  final TokenStorage storage;
-  final Dio _dio;
-
-  static String get baseUrl => ApiEndpoints.baseUrl;
-
-  Map<String, dynamic> _data(Response<dynamic> response) {
-    final data = response.data;
-    if (data is Map<String, dynamic>) return data;
-    throw const ApiException(500, '响应格式错误');
-  }
-
-  Never _fail(DioException error) {
-    final status = error.response?.statusCode ?? 0;
-    var message = '请求失败';
-    String? code;
-    final data = error.response?.data;
-    if (data is Map<String, dynamic>) {
-      message = (data['message'] as String?) ?? message;
-      code = data['code'] as String?;
-    }
-    throw ApiException(status, message, code: code);
-  }
-
-  Future<Map<String, dynamic>> _get(String path) async {
-    try {
-      return _data(await _dio.get<dynamic>(path));
-    } on DioException catch (error) {
-      _fail(error);
-    }
-  }
-
-  Future<Map<String, dynamic>> _post(
-    String path,
-    Map<String, dynamic> body,
-  ) async {
-    try {
-      return _data(await _dio.post<dynamic>(path, data: body));
-    } on DioException catch (error) {
-      _fail(error);
-    }
-  }
-
-  Future<AuthResult> login(String email, String password) async {
-    final data = await _post(ApiEndpoints.login, {
-      'email': email,
-      'password': password,
-    });
-    final result = AuthResult(
-      token: data['accessToken'] as String,
-      email: (data['account']?['email'] as String?) ?? email,
-    );
-    token = result.token;
-    return result;
-  }
-
-  Future<AuthResult> register(String email, String password) async {
-    final data = await _post(ApiEndpoints.register, {
-      'email': email,
-      'password': password,
-    });
-    final result = AuthResult(
-      token: data['accessToken'] as String,
-      email: (data['account']?['email'] as String?) ?? email,
-    );
-    token = result.token;
-    return result;
-  }
-
-  Future<LifeSnapshot> life() async =>
-      LifeSnapshot.fromJson(await _get(ApiEndpoints.life));
-
-  Future<List<RemoteMoment>> feed() async {
-    final data = await _get('${ApiEndpoints.feed}?limit=30');
-    final raw = (data['posts'] as List<dynamic>?) ?? const [];
-    return raw.map((e) {
-      final m = e as Map<String, dynamic>;
-      final photos = <String>[];
-      final rawPhotos = m['photos'];
-      if (rawPhotos is List) photos.addAll(rawPhotos.whereType<String>());
-      if (photos.isEmpty && m['photo_url'] is String) {
-        photos.add(m['photo_url'] as String);
-      }
-      final ts = (m['ts'] as String?) ?? '';
-      return RemoteMoment(
-        id:
-            (m['id'] as num?)?.toString() ??
-            'post-${DateTime.now().microsecondsSinceEpoch}',
-        author: '笨笨',
-        time: ts.length >= 16 ? ts.substring(11, 16) : '',
-        place: (m['place'] as String?) ?? '',
-        text: (m['text'] as String?) ?? '',
-        photos: photos,
-      );
-    }).toList();
-  }
-
-  Future<CreditBalance> credits() async =>
-      CreditBalance.fromJson(await _get(ApiEndpoints.credits));
-
-  Stream<ChatEvent> streamChat(String message) async* {
-    final response = await _dio.post<ResponseBody>(
-      ApiEndpoints.chat,
-      data: {'message': message},
-      options: Options(
-        responseType: ResponseType.stream,
-        validateStatus: (status) => status != null,
-      ),
-    );
-    final body = response.data;
-    if (body == null) throw const ApiException(502, '上游没有返回流');
-    if (response.statusCode != 200) {
-      final text = await utf8.decoder.bind(body.stream).join();
-      var messageText = '请求失败';
-      String? code;
-      try {
-        final data = jsonDecode(text) as Map<String, dynamic>;
-        messageText = (data['message'] as String?) ?? messageText;
-        code = data['code'] as String?;
-      } catch (_) {}
-      throw ApiException(response.statusCode ?? 0, messageText, code: code);
-    }
-    var event = '';
-    final data = StringBuffer();
-    await for (final line
-        in utf8.decoder.bind(body.stream).transform(const LineSplitter())) {
-      if (line.isEmpty) {
-        if (data.isNotEmpty) {
-          yield ChatEvent(event.isEmpty ? 'message' : event, data.toString());
-        }
-        event = '';
-        data.clear();
-        continue;
-      }
-      if (line.startsWith('event:')) event = line.substring(6).trim();
-      if (line.startsWith('data:')) {
-        if (data.isNotEmpty) data.write('\n');
-        data.write(line.substring(5).trimLeft());
-      }
-    }
-    if (data.isNotEmpty) {
-      yield ChatEvent(event.isEmpty ? 'message' : event, data.toString());
-    }
-  }
 }
 
 String _dayLabel(String? isoDay) {

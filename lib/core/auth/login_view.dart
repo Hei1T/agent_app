@@ -40,17 +40,37 @@ class _LoginViewState extends ConsumerState<LoginView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.auto_stories_rounded, color: Colors.white, size: 44),
+                  const Icon(
+                    Icons.auto_stories_rounded,
+                    color: Colors.white,
+                    size: 44,
+                  ),
                   SizedBox(height: AppSpacing.md(context)),
-                  Text('笨笨', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
+                  Text(
+                    '笨笨',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   SizedBox(height: AppSpacing.xs(context)),
-                  Text('正在栖湾生活的人', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white54)),
+                  Text(
+                    '正在栖湾生活的人',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.white54),
+                  ),
                   SizedBox(height: AppSpacing.xxl(context)),
                   TextField(
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
                     style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(labelText: '邮箱', hintText: 'demo@benben.local'),
+                    decoration: const InputDecoration(
+                      labelText: '邮箱',
+                      hintText: 'demo@benben.local',
+                    ),
                   ),
                   SizedBox(height: AppSpacing.sm(context)),
                   TextField(
@@ -61,12 +81,24 @@ class _LoginViewState extends ConsumerState<LoginView> {
                   ),
                   if (auth.error != null) ...[
                     SizedBox(height: AppSpacing.sm(context)),
-                    Text(auth.error!, style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 12)),
+                    Text(
+                      auth.error!,
+                      style: const TextStyle(
+                        color: Color(0xFFFF8A80),
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                   SizedBox(height: AppSpacing.md(context)),
                   FilledButton(
                     onPressed: auth.loading ? null : _submit,
-                    child: auth.loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('进入'),
+                    child: auth.loading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('进入'),
                   ),
                   SizedBox(height: AppSpacing.sm(context)),
                   TextButton(
@@ -77,11 +109,19 @@ class _LoginViewState extends ConsumerState<LoginView> {
                     child: const Text('使用演示账号'),
                   ),
                   TextButton(
-                    onPressed: auth.loading ? null : () => ref.read(authProvider.notifier).register(_email.text, _password.text),
+                    onPressed: auth.loading
+                        ? null
+                        : () => ref
+                              .read(authProvider.notifier)
+                              .register(_email.text, _password.text),
                     child: const Text('注册新账号'),
                   ),
                   SizedBox(height: AppSpacing.xxl(context)),
-                  Text('API: ${ApiClient.baseUrl}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white24, fontSize: 10)),
+                  Text(
+                    'API: ${ApiClient.baseUrl}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white24, fontSize: 10),
+                  ),
                 ],
               ),
             ),
