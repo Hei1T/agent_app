@@ -42,7 +42,40 @@ class _ChatViewState extends ConsumerState<ChatView> {
   final _scroll = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _sending = false;
+  bool _historyLoaded = false;
   String _streamingText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    if (_historyLoaded) return;
+    _historyLoaded = true;
+    try {
+      final page = await ref.read(apiProvider).chatHistory();
+      if (!mounted || page.items.isEmpty) return;
+      setState(() {
+        _messages.addAll(
+          page.items.map((item) {
+            final hash = item.text.hashCode;
+            return ChatMessage(
+              id: item.id.isEmpty ? 'history-$hash' : item.id,
+              text: item.text,
+              fromCompanion: item.fromCompanion,
+              read: true,
+            );
+          }),
+        );
+      });
+      _scrollToEnd();
+    } catch (_) {
+      // 历史失败不阻塞新对话；下一次进入会重试。
+      _historyLoaded = false;
+    }
+  }
 
   @override
   void dispose() {

@@ -2,6 +2,7 @@ import 'package:benben_app/app.dart';
 import 'package:benben_app/core/api/api_client.dart';
 import 'package:benben_app/core/auth/auth_controller.dart';
 import 'package:benben_app/core/contract/auth_contract.dart';
+import 'package:benben_app/core/contract/chat_history.dart';
 import 'package:benben_app/core/contract/companion_state.dart';
 import 'package:benben_app/core/contract/diary.dart';
 import 'package:benben_app/core/contract/moment.dart';
@@ -30,6 +31,9 @@ class FakeApiClient extends ApiClient {
   @override
   Future<DiaryPage> diary({int limit = 30, String? cursor}) async =>
       diaryPage ?? const DiaryPage();
+
+  @override
+  Future<ChatHistoryPage> chatHistory() async => const ChatHistoryPage();
 
   @override
   Future<CreditBalance> credits() async =>

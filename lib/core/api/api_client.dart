@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 
 import '../contract/auth_contract.dart';
 import '../contract/chat_event.dart';
+import '../contract/chat_history.dart';
 import '../contract/companion_state.dart';
 import '../contract/diary.dart';
 import '../contract/moment.dart';
@@ -206,6 +207,10 @@ class ApiClient {
 
   Future<CreditBalance> credits() async =>
       CreditBalance.fromJson(await _get(ApiEndpoints.creditsBalance));
+
+  /// GET /chat/history：Conversation 初始化时加载真实历史。
+  Future<ChatHistoryPage> chatHistory() async =>
+      ChatHistoryPage.fromJson(await _get(ApiEndpoints.chatHistory));
 
   /// POST /chat，解析契约 SSE（JSON data），过渡期兼容旧 core 的裸字符串。
   Stream<ContractChatEvent> streamChat(

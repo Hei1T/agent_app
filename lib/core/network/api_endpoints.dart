@@ -31,6 +31,7 @@ abstract final class ApiEndpoints {
 
   static const creditsBalance = '/credits/balance';
   static const chat = '/chat';
+  static const chatHistory = '/chat/history';
 
   /// v1 扩展：POST /companion/moments/:id/like。
   static String momentLike(String momentId) =>
