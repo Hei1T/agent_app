@@ -59,9 +59,21 @@ jobs:
           fi
 
       - name: Build unsigned iOS app
+        id: build
+        shell: bash
         run: |
+          set +e
           flutter build ios --release --no-codesign \
-            --dart-define=API_BASE_URL="$API_BASE_URL"
+            --dart-define=API_BASE_URL="$API_BASE_URL" > ios-build.log 2>&1
+          code=$?
+          tail -200 ios-build.log
+          if [ $code -ne 0 ]; then
+            echo "::error::iOS build failed with exit code $code"
+            tail -100 ios-build.log | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            exit $code
+          fi
 
       - name: Package unsigned IPA
         run: |
