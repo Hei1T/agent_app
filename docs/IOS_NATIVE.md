@@ -71,7 +71,7 @@ iPhone 首次运行需要在 设置 → 通用 → VPN与设备管理 信任开�
 ## iOS 项目已准备的配置
 
 - Bundle ID：com.benben.benbenApp
-- Deployment Target：13.0
+- Deployment Target：15.0
 - Info.plist：
   - 通知/相机/相册/麦克风描述
   - 本地网络描述
