@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/realtime/realtime_bridge.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'shared/widgets/app_sheet.dart';
@@ -27,6 +28,7 @@ class BenbenApp extends ConsumerWidget {
         builder: (context, child) => Stack(
           children: [
             child ?? const SizedBox.shrink(),
+            const RealtimeBridge(),
             Positioned.fill(child: AppSheetHost(key: AppSheetHost.hostKey)),
             Positioned(
               top: 0,

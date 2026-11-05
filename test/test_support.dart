@@ -1,6 +1,7 @@
 import 'package:benben_app/app.dart';
 import 'package:benben_app/core/api/api_client.dart';
 import 'package:benben_app/core/auth/auth_controller.dart';
+import 'package:benben_app/core/providers/app_providers.dart';
 import 'package:benben_app/core/contract/auth_contract.dart';
 import 'package:benben_app/core/contract/chat_history.dart';
 import 'package:benben_app/core/contract/companion_state.dart';
@@ -126,6 +127,7 @@ Future<void> pumpBenben(WidgetTester tester, {FakeApiClient? apiClient}) async {
     ProviderScope(
       overrides: [
         apiProvider.overrideWithValue(api),
+        realtimeEnabledProvider.overrideWithValue(false),
         authProvider.overrideWith((ref) => FakeAuthController(api)),
       ],
       child: const BenbenApp(),

@@ -26,3 +26,6 @@ final diaryProvider = FutureProvider.autoDispose<DiaryPage>(
 final creditsProvider = FutureProvider.autoDispose<CreditBalance>(
   (ref) => ref.read(apiProvider).credits(),
 );
+
+/// 测试可覆盖为 false，避免 widget test 建立真实 WS。
+final realtimeEnabledProvider = Provider<bool>((ref) => true);
