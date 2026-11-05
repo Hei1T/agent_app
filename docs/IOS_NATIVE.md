@@ -22,8 +22,7 @@ Windows 不能编译或签名 iOS App。原生 iPhone 必须经过 macOS + Xcode
     bash
     cd benben_flutter
     flutter pub get
-    cd ios && pod install && cd ..
-    flutter run -d <iPhone> --dart-define=API_BASE_URL=http://<Windows局域网IP>:3000/api/v1
+        flutter run -d <iPhone> --dart-define=API_BASE_URL=http://<Windows局域网IP>:3000/api/v1
     
 
 iPhone 首次运行需要在 设置 → 通用 → VPN与设备管理 信任开发者证书。
@@ -76,7 +75,7 @@ iPhone 首次运行需要在 设置 → 通用 → VPN与设备管理 信任开�
   - 通知/相机/相册/麦克风描述
   - 本地网络描述
   - 开发期 ATS 允许 HTTP
-- ios/Podfile
+- Swift Package Manager（Flutter 3.41 默认）
 - 本地通知、video_player、image_picker、secure_storage 均有 iOS 实现
 
 正式上架前应把 ATS 的 NSAllowsArbitraryLoads 改成只允许你的 HTTPS 域名。

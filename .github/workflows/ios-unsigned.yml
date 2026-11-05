@@ -26,38 +26,6 @@ jobs:
       - name: Flutter dependencies
         run: flutter pub get
 
-      - name: CocoaPods
-        id: pods
-        shell: bash
-        run: |
-          set +e
-          pod --version > pod-version.log 2>&1
-          cd ios
-          pod install > ../pod-install.log 2>&1
-          code=$?
-          cd ..
-          cat pod-version.log
-          cat pod-install.log
-          if [ $code -ne 0 ]; then
-            echo "::error::pod install failed with exit code $code"
-            tail -80 pod-install.log | while IFS= read -r line; do
-              echo "::error::$line"
-            done
-            exit $code
-          fi
-
-      - name: CocoaPods diagnostics
-        if: always()
-        run: |
-          if [ -f pod-install.log ]; then
-            {
-              echo '## CocoaPods log'
-              echo '```'
-              tail -200 pod-install.log
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-
       - name: Build unsigned iOS app
         id: build
         shell: bash
